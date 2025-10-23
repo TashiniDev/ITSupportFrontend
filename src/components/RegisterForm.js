@@ -20,12 +20,12 @@ const registerValidationSchema = Yup.object({
     .required('Email is required'),
   role: Yup.string()
     .required('Please select a role'),
-  category: Yup.string()
-    .when('role', {
-      is: '1', // IT Team Member
-      then: (schema) => schema.required('Please select an IT category'),
-      otherwise: (schema) => schema.nullable()
-    }),
+    category: Yup.string()
+      .when('role', {
+        is: (val) => String(val) === '2' || val === 2, // IT Team Member (role id = 2)
+        then: (schema) => schema.required('Please select an IT category'),
+        otherwise: (schema) => schema.nullable()
+      }),
   password: Yup.string()
     .min(8, 'Password must be at least 8 characters long')
     .matches(/^(?=.*[a-z])/, 'Password must contain at least one lowercase letter')
@@ -44,9 +44,9 @@ export const RegisterForm = ({ onRegister, onSuccess }) => {
 
   // Role options based on your backend
   const roleOptions = [
-    { value: '1', label: 'Ticket Creator' },
-    { value: '2', label: 'IT Team' },
-    { value: '3', label: 'IT Head' }
+  { value: '1', label: 'Ticket Creator' },
+  { value: '2', label: 'IT Team' },
+  { value: '3', label: 'IT Head' }
   ];
 
   // Category options (assuming these are the IT categories)
@@ -201,7 +201,7 @@ export const RegisterForm = ({ onRegister, onSuccess }) => {
             <ErrorMessage name="role" component="div" className="text-sm text-red-600 dark:text-red-400" />
           </div>
           
-          {values.role === '2' && ( // Show category only for IT Team Members
+          {values.role === 'it_team' && ( // Show category only for IT Team Members
             <div className="space-y-2">
               <Label htmlFor="category">IT Category</Label>
               <Field name="category">

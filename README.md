@@ -70,7 +70,7 @@ ITSupportFrontend/
 - **ResetPasswordPage**: Set new password with visibility toggle
 - **ToastProvider**: Global toast notification system
 - **ThemeProvider**: Light/dark mode support
-- **UserDashboard/AdminDashboard/DepartmentHeadDashboard**: Role-based dashboards
+- **TicketCreatorDashboard/AdminDashboard/DepartmentHeadDashboard**: Role-based dashboards
 - **ImagePlaceholders**: Logo and illustration components
 
 ## Toast Notifications

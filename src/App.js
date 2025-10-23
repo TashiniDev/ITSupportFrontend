@@ -7,6 +7,10 @@ import {
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import TicketCreatorDashboard from "./components/TicketCreatorDashboard";
+import { AdminDashboard } from "./components/AdminDashboard";
+import { DepartmentHeadDashboard } from "./components/DepartmentHeadDashboard";
+import CreateTicketPage from './pages/CreateTicketPage';
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { ThemeProvider } from "./components/ThemeProvider";
 import ToastProvider from "./components/ToastProvider";
@@ -25,6 +29,11 @@ const Layout = () => {
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          {/* Explicit role-specific dashboard routes so we can deep-link (use DashboardPage to include header) */}
+          <Route path="/dashboard/ticket-creator" element={<DashboardPage />} />
+          <Route path="/dashboard/it-team" element={<DashboardPage />} />
+          <Route path="/tickets/create" element={<CreateTicketPage />} />
+          <Route path="/dashboard/it-head" element={<DashboardPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           {/* Removed forgot-password route: replaced by in-page modal in LoginPage */}
         </Routes>

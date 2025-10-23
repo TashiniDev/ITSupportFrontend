@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { ITSupportImage, PrintcareLogoPlaceholder } from '../components/ImagePlaceholders';
 import { Sun, Moon } from 'lucide-react';
 import toastService from '../services/toastService';
+import { normalizeRole } from '../utils/roleUtils';
 
 function LoginPage() {
   const [activeTab, setActiveTab] = useState('login');
@@ -43,12 +44,14 @@ function LoginPage() {
       localStorage.setItem('authToken', response.token);
       
       // Create user object based on your backend response
+      const canonicalRole = normalizeRole(response.user.role || response.user.roleId || 'ticket_creator') || 'ticket_creator';
+
       const userData = {
         id: response.user.uid,
         uid: response.user.uid,
         email: response.user.email,
         name: response.user.name || email.split('@')[0], // Use name from response or fallback
-        role: response.user.role || 'ticket_creator',
+        role: canonicalRole,
         team: response.user.team || null
       };
       
@@ -56,11 +59,25 @@ function LoginPage() {
       
       // Show welcome message
       toastService.auth.loginSuccess(userData.name);
-      
-      // Navigate to dashboard after short delay
+
+      // Navigate to role-specific dashboard after short delay
       setTimeout(() => {
+        if (canonicalRole === 'ticket_creator' || canonicalRole === '1') {
+          navigate('/dashboard/ticket-creator');
+          return;
+        }
+        if (canonicalRole === 'it_team' || canonicalRole === '2') {
+          navigate('/dashboard/it-team');
+          return;
+        }
+        if (canonicalRole === 'department_head' || canonicalRole === '3') {
+          navigate('/dashboard/it-head');
+          return;
+        }
+
+        // Fallback
         navigate('/dashboard');
-      }, 1500);
+      }, 800);
       
     } catch (error) {
       console.log('Login error:', error);
