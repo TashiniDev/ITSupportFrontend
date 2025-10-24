@@ -1,12 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as Yup from 'yup';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import toastService from '../services/toastService';
+import lookupService from '../services/lookupService';
 import DashboardHeader from '../components/DashboardHeader';
+
+// Validation schema for the form
+const validationSchema = Yup.object({
+  fullName: Yup.string()
+    .trim()
+    .min(2, 'Full name must be at least 2 characters')
+    .max(100, 'Full name must be less than 100 characters')
+    .required('Full name is required'),
+  department: Yup.string()
+    .required('Department is required'),
+  company: Yup.string()
+    .required('Company is required'),
+  category: Yup.string()
+    .required('Category is required'),
+  assignedTo: Yup.string()
+    .required('Assign to user is required'),
+  priority: Yup.string()
+    .oneOf(['Low', 'Medium', 'High', 'Critical'], 'Please select a valid priority')
+    .required('Priority level is required'),
+  // Optional fields validation
+  contactNumber: Yup.string()
+    .matches(/^[0-9+\-\s()]*$/, 'Please enter a valid phone number'),
+  description: Yup.string()
+    .max(2000, 'Description must be less than 2000 characters')
+});
 
 export default function CreateTicketPage() {
   const navigate = useNavigate();
@@ -16,17 +43,117 @@ export default function CreateTicketPage() {
     department: '',
     company: '',
     category: '',
+    assignedTo: '',
     issueType: '',
     requestType: '',
-    priority: 'Medium',
+    priority: '',
     description: '',
   });
 
   const [attachments, setAttachments] = useState([]);
+  
+  // State for dropdown data
+  const [lookupData, setLookupData] = useState({
+    departments: [],
+    companies: [],
+    categories: [],
+    requestTypes: [],
+    issueTypes: []
+  });
+  
+  // Loading state for dropdowns
+  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
+  const [lookupError, setLookupError] = useState(null);
+  
+  // State for users based on selected category
+  const [users, setUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Load lookup data on component mount
+  useEffect(() => {
+    const loadLookupData = async () => {
+      try {
+        setIsLoadingLookups(true);
+        setLookupError(null);
+        const data = await lookupService.getAllLookupData();
+        setLookupData(data);
+      } catch (error) {
+        console.error('Failed to load lookup data:', error);
+        setLookupError(error.message);
+        toastService.error('Failed to load form data. Please try again.');
+      } finally {
+        setIsLoadingLookups(false);
+      }
+    };
+
+    loadLookupData();
+  }, []);
+
+  // Load users when category changes
+  useEffect(() => {
+    const loadUsers = async () => {
+      if (!form.category) {
+        setUsers([]);
+        setForm(prevForm => ({ ...prevForm, assignedTo: '' }));
+        return;
+      }
+
+      try {
+        setIsLoadingUsers(true);
+        setUsersError(null);
+        const usersData = await lookupService.getUsersByCategory(form.category);
+        setUsers(Array.isArray(usersData) ? usersData : []);
+        // Reset assigned user when category changes
+        setForm(prevForm => ({ ...prevForm, assignedTo: '' }));
+      } catch (error) {
+        console.error('Failed to load users:', error);
+        setUsersError(error.message);
+        setUsers([]);
+        toastService.error('Failed to load users for selected category');
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    loadUsers();
+  }, [form.category]);
+
+  // Retry loading lookup data
+  const retryLoadLookupData = () => {
+    const loadLookupData = async () => {
+      try {
+        setIsLoadingLookups(true);
+        setLookupError(null);
+        const data = await lookupService.getAllLookupData();
+        setLookupData(data);
+        toastService.success('Form data loaded successfully');
+      } catch (error) {
+        console.error('Failed to load lookup data:', error);
+        setLookupError(error.message);
+        toastService.error('Failed to load form data. Please try again.');
+      } finally {
+        setIsLoadingLookups(false);
+      }
+    };
+
+    loadLookupData();
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleFile = (e) => {
@@ -36,19 +163,41 @@ export default function CreateTicketPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!form.fullName || !form.department || !form.category) {
-      toastService.error('Please fill required fields: Full Name, Department and Category');
-      return;
+    
+    try {
+      // Clear previous validation errors
+      setValidationErrors({});
+      
+      // Validate form data against schema
+      await validationSchema.validate(form, { abortEarly: false });
+      
+      // If validation passes, proceed with form submission
+      const id = toastService.loading('Creating ticket...');
+      
+      // Mock submit — replace with API call
+      setTimeout(() => {
+        toastService.dismiss(id);
+        toastService.success('Ticket created successfully');
+        navigate('/dashboard');
+      }, 900);
+      
+    } catch (error) {
+      if (error.name === 'ValidationError') {
+        // Handle Yup validation errors
+        const errors = {};
+        error.inner.forEach((err) => {
+          errors[err.path] = err.message;
+        });
+        setValidationErrors(errors);
+        
+        // Show general error message
+        toastService.error('Please fix the validation errors below');
+      } else {
+        // Handle other errors
+        console.error('Form submission error:', error);
+        toastService.error('An error occurred while creating the ticket');
+      }
     }
-
-    // Mock submit — replace with API call
-    const id = toastService.loading('Creating ticket...');
-    setTimeout(() => {
-      toastService.dismiss(id);
-      toastService.success('Ticket created successfully');
-      navigate('/dashboard');
-    }, 900);
   };
 
   return (
@@ -62,6 +211,33 @@ export default function CreateTicketPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {isLoadingLookups && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-blue-700">Loading form data...</span>
+              </div>
+            </div>
+          )}
+
+          {lookupError && !isLoadingLookups && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="text-red-600">⚠️</div>
+                  <span className="text-red-700">Failed to load form data</span>
+                </div>
+                <Button 
+                  onClick={retryLoadLookupData} 
+                  variant="ghost" 
+                  className="text-red-600 hover:text-red-800"
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          )}
+          
           <Card className="mb-4">
             <CardHeader>
               <div className="flex items-center space-x-2">
@@ -72,11 +248,33 @@ export default function CreateTicketPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Full Name *</Label>
-                  <Input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Your full name" />
+                  <Input 
+                    name="fullName" 
+                    value={form.fullName} 
+                    onChange={handleChange} 
+                    placeholder="Your full name"
+                    className={validationErrors.fullName ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.fullName && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.fullName}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>Contact Number</Label>
-                  <Input name="contactNumber" value={form.contactNumber} onChange={handleChange} placeholder="Your contact number (optional)" />
+                  <Input 
+                    name="contactNumber" 
+                    value={form.contactNumber} 
+                    onChange={handleChange} 
+                    placeholder="Your contact number (optional)"
+                    className={validationErrors.contactNumber ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.contactNumber && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.contactNumber}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -90,20 +288,57 @@ export default function CreateTicketPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Department *</Label>
-                  <Select name="department" value={form.department} onChange={handleChange}>
-                    <option value="">Select your department</option>
-                    <option value="hr">HR</option>
-                    <option value="finance">Finance</option>
-                    <option value="it">IT</option>
+                  <Select 
+                    name="department" 
+                    value={form.department} 
+                    onChange={handleChange} 
+                    disabled={isLoadingLookups}
+                    className={validationErrors.department ? 'border-red-500' : ''}
+                  >
+                    <option value="">
+                      {isLoadingLookups ? 'Loading departments...' : 'Select your department'}
+                    </option>
+                    {Array.isArray(lookupData.departments) && lookupData.departments.map((dept, index) => (
+                      <option key={dept.Id || dept.id || dept.value || dept._id || index} value={dept.Id || dept.id || dept.value || dept._id}>
+                        {dept.Name || dept.name || dept.label || dept.title || dept.departmentName || `Department ${index + 1}`}
+                      </option>
+                    ))}
+                    {(!Array.isArray(lookupData.departments) || lookupData.departments.length === 0) && !isLoadingLookups && (
+                      <option disabled>No departments available</option>
+                    )}
                   </Select>
+                  {validationErrors.department && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.department}
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <Label>Company</Label>
-                  <Select name="company" value={form.company} onChange={handleChange}>
-                    <option value="">Select company (optional)</option>
-                    <option value="printcare">Printcare</option>
-                    <option value="other">Other</option>
+                  <Label>Company *</Label>
+                  <Select 
+                    name="company" 
+                    value={form.company} 
+                    onChange={handleChange} 
+                    disabled={isLoadingLookups}
+                    className={validationErrors.company ? 'border-red-500' : ''}
+                  >
+                    <option value="">
+                      {isLoadingLookups ? 'Loading companies...' : 'Select company'}
+                    </option>
+                    {Array.isArray(lookupData.companies) && lookupData.companies.map((company, index) => (
+                      <option key={company.Id || company.id || company.value || company._id || index} value={company.Id || company.id || company.value || company._id}>
+                        {company.Name || company.name || company.label || company.title || company.companyName || `Company ${index + 1}`}
+                      </option>
+                    ))}
+                    {(!Array.isArray(lookupData.companies) || lookupData.companies.length === 0) && !isLoadingLookups && (
+                      <option disabled>No companies available</option>
+                    )}
                   </Select>
+                  {validationErrors.company && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.company}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -117,40 +352,124 @@ export default function CreateTicketPage() {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label>Category *</Label>
-                  <Select name="category" value={form.category} onChange={handleChange}>
-                    <option value="">Select category</option>
-                    <option value="powerapp">Power Apps</option>
-                    <option value="development">Development</option>
-                    <option value="server">Server/Application</option>
-                    <option value="network">Network</option>
-                    <option value="hris">HRIS</option>
-                    <option value="hardware">Hardware</option>
+                  <Select 
+                    name="category" 
+                    value={form.category} 
+                    onChange={handleChange} 
+                    disabled={isLoadingLookups}
+                    className={validationErrors.category ? 'border-red-500' : ''}
+                  >
+                    <option value="">
+                      {isLoadingLookups ? 'Loading categories...' : 'Select category'}
+                    </option>
+                    {Array.isArray(lookupData.categories) && lookupData.categories.map((category, index) => (
+                      <option key={category.Id || category.id || category.value || category._id || index} value={category.Id || category.id || category.value || category._id}>
+                        {category.Name || category.name || category.label || category.title || category.categoryName || `Category ${index + 1}`}
+                      </option>
+                    ))}
+                    {(!Array.isArray(lookupData.categories) || lookupData.categories.length === 0) && !isLoadingLookups && (
+                      <option disabled>No categories available</option>
+                    )}
                   </Select>
+                  {validationErrors.category && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.category}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Label>Assign To *</Label>
+                  <Select 
+                    name="assignedTo" 
+                    value={form.assignedTo} 
+                    onChange={handleChange} 
+                    disabled={isLoadingUsers || !form.category}
+                    className={validationErrors.assignedTo ? 'border-red-500' : ''}
+                  >
+                    <option value="">
+                      {!form.category 
+                        ? 'Select category first' 
+                        : isLoadingUsers 
+                          ? 'Loading users...' 
+                          : 'Select user to assign'
+                      }
+                    </option>
+                    {Array.isArray(users) && users.map((user, index) => (
+                      <option key={user.Id || user.id || user._id || index} value={user.Id || user.id || user._id}>
+                        {user.Name || user.name || user.fullName || user.username || `User ${index + 1}`}
+                      </option>
+                    ))}
+                    {(!Array.isArray(users) || users.length === 0) && !isLoadingUsers && form.category && (
+                      <option disabled>No users available for this category</option>
+                    )}
+                  </Select>
+                  {validationErrors.assignedTo && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.assignedTo}
+                    </div>
+                  )}
+                  {usersError && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {usersError}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Issue Type</Label>
-                    <Select name="issueType" value={form.issueType} onChange={handleChange}>
-                      <option value="">Select category first</option>
+                    <Select name="issueType" value={form.issueType} onChange={handleChange} disabled={isLoadingLookups}>
+                      <option value="">
+                        {isLoadingLookups ? 'Loading issue types...' : 'Select issue type (optional)'}
+                      </option>
+                      {Array.isArray(lookupData.issueTypes) && lookupData.issueTypes.map((issueType, index) => (
+                        <option key={issueType.Id || issueType.id || issueType.value || issueType._id || index} value={issueType.Id || issueType.id || issueType.value || issueType._id}>
+                          {issueType.Name || issueType.name || issueType.label || issueType.title || issueType.typeName || `Issue Type ${index + 1}`}
+                        </option>
+                      ))}
+                      {(!Array.isArray(lookupData.issueTypes) || lookupData.issueTypes.length === 0) && !isLoadingLookups && (
+                        <option disabled>No issue types available</option>
+                      )}
                     </Select>
                   </div>
                   <div>
                     <Label>Request Type</Label>
-                    <Select name="requestType" value={form.requestType} onChange={handleChange}>
-                      <option value="">Select category first</option>
+                    <Select name="requestType" value={form.requestType} onChange={handleChange} disabled={isLoadingLookups}>
+                      <option value="">
+                        {isLoadingLookups ? 'Loading request types...' : 'Select request type (optional)'}
+                      </option>
+                      {Array.isArray(lookupData.requestTypes) && lookupData.requestTypes.map((requestType, index) => (
+                        <option key={requestType.Id || requestType.id || requestType.value || requestType._id || index} value={requestType.Id || requestType.id || requestType.value || requestType._id}>
+                          {requestType.Name || requestType.name || requestType.label || requestType.title || requestType.typeName || `Request Type ${index + 1}`}
+                        </option>
+                      ))}
+                      {(!Array.isArray(lookupData.requestTypes) || lookupData.requestTypes.length === 0) && !isLoadingLookups && (
+                        <option disabled>No request types available</option>
+                      )}
                     </Select>
                   </div>
                 </div>
 
                 <div>
                   <Label>Priority Level *</Label>
-                  <Select name="priority" value={form.priority} onChange={handleChange}>
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                    <option>Critical</option>
+                  <Select 
+                    name="priority" 
+                    value={form.priority} 
+                    onChange={handleChange}
+                    className={validationErrors.priority ? 'border-red-500' : ''}
+                  >
+                    <option value="">Select priority level</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
                   </Select>
+                  {validationErrors.priority && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.priority}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -186,7 +505,13 @@ export default function CreateTicketPage() {
           </Card>
 
           <div className="flex items-center space-x-3">
-            <Button type="submit" className="bg-blue-600 text-white">Create Ticket</Button>
+            <Button 
+              type="submit" 
+              className="bg-blue-600 text-white" 
+              disabled={isLoadingLookups}
+            >
+              {isLoadingLookups ? 'Loading...' : 'Create Ticket'}
+            </Button>
             <Button variant="ghost" onClick={() => navigate('/dashboard')}>Cancel</Button>
           </div>
         </form>

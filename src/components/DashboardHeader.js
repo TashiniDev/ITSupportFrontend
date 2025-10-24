@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { ITSupportImage } from './ImagePlaceholders';
+import { ITSupportImage, PrintcareLogoPlaceholder } from './ImagePlaceholders';
 import { LogOut, Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
@@ -21,7 +21,7 @@ export default function DashboardHeader({ onLogout }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-3">
-            <ITSupportImage className="h-8 w-8" alt="IT Supporter Logo" />
+            <PrintcareLogoPlaceholder className="h-10 w-10" alt="IT Supporter Logo" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IT Supporter</h1>
           </div>
 

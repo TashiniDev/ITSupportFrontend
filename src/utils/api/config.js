@@ -6,7 +6,17 @@ export const API_ENDPOINTS = {
   REGISTER: '/auth/register',
   LOGIN: '/auth/login',
   FORGOT_PASSWORD: '/auth/forgot-password',
-  PROFILE: '/user/profile' // You'll need to create this endpoint for user profile
+  PROFILE: '/user/profile', // You'll need to create this endpoint for user profile
+  
+  // Lookup endpoints
+  DEPARTMENTS: '/lookups/departments',
+  COMPANIES: '/lookups/companies',
+  CATEGORIES: '/lookups/categories',
+  REQUEST_TYPES: '/lookups/request-types',
+  ISSUE_TYPES: '/lookups/issue-types',
+  
+  // Users by category endpoint
+  USERS_BY_CATEGORY: '/user/category'
 };
 
 // Helper function to make API calls
