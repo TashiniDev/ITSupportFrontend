@@ -17,9 +17,10 @@ export default function DashboardHeader({ onLogout }) {
   const role = user?.role || user?.roleId || 'ticket_creator';
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-3">
             <PrintcareLogoPlaceholder className="h-10 w-10" alt="IT Supporter Logo" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IT Supporter</h1>
@@ -50,7 +51,10 @@ export default function DashboardHeader({ onLogout }) {
             <Button onClick={() => navigate('/tickets/create')} variant="outline" size="sm">Create</Button>
           </div>
         </div>
-      </div>
-    </header>
+        </div>
+      </header>
+      {/* spacer to offset fixed header height */}
+      <div className="h-16" aria-hidden />
+    </>
   );
 }

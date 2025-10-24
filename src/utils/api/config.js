@@ -37,15 +37,40 @@ export const apiCall = async (endpoint, options = {}) => {
   }
 
   try {
+    console.log(`[apiCall] Request -> ${config.method || 'GET'} ${url}`);
     const response = await fetch(url, config);
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Something went wrong');
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (jsonErr) {
+      // No JSON body
+      data = null;
     }
-    
+
+    console.log(`[apiCall] Response <- ${response.status} ${url}`, data);
+
+    if (!response.ok) {
+      // Log full error for easier debugging in the browser console
+      console.error('API call failed', { url, status: response.status, body: data });
+
+      // If unauthorized, clear token and redirect to login so user can re-authenticate
+      if (response.status === 401) {
+        try {
+          localStorage.removeItem('authToken');
+        } catch (e) {
+          // ignore
+        }
+        // Redirect to login page (will reload the app)
+        try { window.location.href = '/login'; } catch (e) { /* ignore in non-browser env */ }
+        throw new Error((data && data.message) || 'Unauthorized');
+      }
+
+      throw new Error((data && data.message) || `HTTP ${response.status}`);
+    }
+
     return data;
   } catch (error) {
+    console.error(`[apiCall] Error calling ${url}:`, error);
     throw error;
   }
 };

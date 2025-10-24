@@ -206,8 +206,8 @@ export default function CreateTicketPage() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-6">
           <Button onClick={() => navigate(-1)} variant="ghost">&larr; Back to Tickets</Button>
-          <h1 className="text-3xl font-bold mt-4">Create New Support Ticket</h1>
-          <p className="text-sm text-gray-600">Fill out all details for faster resolution</p>
+          <h1 className="text-3xl font-bold mt-4 text-gray-900 dark:text-white">Create New Support Ticket</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Fill out all details for faster resolution</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -238,10 +238,10 @@ export default function CreateTicketPage() {
             </div>
           )}
           
-          <Card className="mb-4">
+          <Card className="mb-4 dark:bg-[rgb(8,10,12)] dark:border-gray-800">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <div className="text-xl">Personal Information</div>
+                <div className="text-xl text-gray-900 dark:text-white">Personal Information</div>
               </div>
             </CardHeader>
             <CardContent>
@@ -280,9 +280,9 @@ export default function CreateTicketPage() {
             </CardContent>
           </Card>
 
-          <Card className="mb-4">
+          <Card className="mb-4 dark:bg-[rgb(8,10,12)] dark:border-gray-800">
             <CardHeader>
-              <div className="text-xl">Company & Department</div>
+              <div className="text-xl text-gray-900 dark:text-white">Company & Department</div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -344,9 +344,9 @@ export default function CreateTicketPage() {
             </CardContent>
           </Card>
 
-          <Card className="mb-4">
+          <Card className="mb-4 dark:bg-[rgb(8,10,12)] dark:border-gray-800">
             <CardHeader>
-              <div className="text-xl">Issue Classification</div>
+              <div className="text-xl text-gray-900 dark:text-white">Issue Classification</div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-4">
@@ -475,22 +475,22 @@ export default function CreateTicketPage() {
             </CardContent>
           </Card>
 
-          <Card className="mb-4">
+          <Card className="mb-4 dark:bg-[rgb(8,10,12)] dark:border-gray-800">
             <CardHeader>
-              <div className="text-xl">Issue Description</div>
+              <div className="text-xl text-gray-900 dark:text-white">Issue Description</div>
             </CardHeader>
             <CardContent>
               <Label>Detailed Problem Description</Label>
-              <textarea name="description" value={form.description} onChange={handleChange} rows={6} className="w-full rounded-md border-gray-200 bg-gray-50 p-3" placeholder="Please provide (optional):\n- What exactly happened?\n- When did it start?\n- Steps you've already tried\n- Any error messages\n- Impact on your work" />
+              <textarea name="description" value={form.description} onChange={handleChange} rows={6} className="w-full rounded-md border-gray-200 bg-gray-50 p-3 dark:bg-[rgb(6,8,10)] dark:border-gray-800 dark:text-gray-200" placeholder="Please provide (optional):\n- What exactly happened?\n- When did it start?\n- Steps you've already tried\n- Any error messages\n- Impact on your work" />
             </CardContent>
           </Card>
 
           <Card className="mb-6">
             <CardHeader>
-              <div className="text-xl">Screenshots & Attachments</div>
+              <div className="text-xl text-gray-900 dark:text-white">Screenshots & Attachments</div>
             </CardHeader>
             <CardContent>
-              <div className="border-dashed border-2 border-gray-200 rounded-md p-6 text-center">
+              <div className="border-dashed border-2 border-gray-200 rounded-md p-6 text-center dark:border-gray-800 dark:bg-[rgb(6,8,10)]">
                 <input type="file" multiple onChange={handleFile} />
                 <div className="text-sm text-gray-500 mt-2">Click to upload files or drag and drop. Screenshots, PNG, JPG, PDF, DOC, TXT files up to 10MB</div>
                 {attachments.length > 0 && (
