@@ -17,18 +17,35 @@ export const API_ENDPOINTS = {
   
   // Users by category endpoint
   USERS_BY_CATEGORY: '/user/category'
+  ,
+  // Tickets
+  TICKETS: '/tickets'
 };
 
 // Helper function to make API calls
 export const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   const config = {
+    // Start with any options the caller passed (method, body, etc.)
+    ...options,
     headers: {
+      // default to JSON but allow callers to override
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    ...options,
   };
+
+  // If caller provided a FormData body, the browser will set the correct
+  // multipart/form-data boundary header automatically. If we leave
+  // 'Content-Type' set to 'application/json' the request will be wrong.
+  if (config.body instanceof FormData) {
+    // remove Content-Type so fetch can set the proper multipart boundary
+    try {
+      delete config.headers['Content-Type'];
+    } catch (e) {
+      // ignore
+    }
+  }
 
   // Add auth token if available
   const token = localStorage.getItem('authToken');

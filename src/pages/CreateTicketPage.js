@@ -8,6 +8,7 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import toastService from '../services/toastService';
 import lookupService from '../services/lookupService';
+import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 import DashboardHeader from '../components/DashboardHeader';
 
 // Validation schema for the form
@@ -72,6 +73,7 @@ export default function CreateTicketPage() {
 
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load lookup data on component mount
   useEffect(() => {
@@ -167,19 +169,53 @@ export default function CreateTicketPage() {
     try {
       // Clear previous validation errors
       setValidationErrors({});
+      setIsSubmitting(true);
       
       // Validate form data against schema
       await validationSchema.validate(form, { abortEarly: false });
       
       // If validation passes, proceed with form submission
-      const id = toastService.loading('Creating ticket...');
-      
-      // Mock submit — replace with API call
-      setTimeout(() => {
-        toastService.dismiss(id);
+      const toastId = toastService.loading('Creating ticket...');
+
+      // Build FormData to include attachments
+      const formData = new FormData();
+      // Append text fields
+      formData.append('fullName', form.fullName || '');
+      if (form.contactNumber) formData.append('contactNumber', form.contactNumber);
+      if (form.department) formData.append('department', form.department);
+      if (form.company) formData.append('company', form.company);
+      if (form.category) formData.append('category', form.category);
+      if (form.assignedTo) formData.append('assignedTo', form.assignedTo);
+      if (form.issueType) formData.append('issueType', form.issueType);
+      if (form.requestType) formData.append('requestType', form.requestType);
+      if (form.priority) formData.append('priority', form.priority);
+      if (form.description) formData.append('description', form.description);
+
+      // Append files. Many backends accept multiple parts with same key 'attachments'
+      if (attachments && attachments.length > 0) {
+        attachments.forEach((file) => {
+          formData.append('attachments', file);
+        });
+      }
+
+      try {
+        // POST to tickets endpoint
+        const response = await apiCall(API_ENDPOINTS.TICKETS, {
+          method: 'POST',
+          body: formData
+        });
+
+        toastService.dismiss(toastId);
         toastService.success('Ticket created successfully');
+        // Optionally use id from response (e.g., response.ticketId)
         navigate('/dashboard');
-      }, 900);
+      } catch (err) {
+        toastService.dismiss(toastId);
+        console.error('Ticket creation failed:', err);
+        toastService.error(err.message || 'Failed to create ticket');
+      }
+      
+      setIsSubmitting(false);
       
     } catch (error) {
       if (error.name === 'ValidationError') {
@@ -196,6 +232,7 @@ export default function CreateTicketPage() {
         // Handle other errors
         console.error('Form submission error:', error);
         toastService.error('An error occurred while creating the ticket');
+        setIsSubmitting(false);
       }
     }
   };
@@ -508,9 +545,9 @@ export default function CreateTicketPage() {
             <Button 
               type="submit" 
               className="bg-blue-600 text-white" 
-              disabled={isLoadingLookups}
+              disabled={isLoadingLookups || isSubmitting}
             >
-              {isLoadingLookups ? 'Loading...' : 'Create Ticket'}
+              {isSubmitting ? 'Creating...' : (isLoadingLookups ? 'Loading...' : 'Create Ticket')}
             </Button>
             <Button variant="ghost" onClick={() => navigate('/dashboard')}>Cancel</Button>
           </div>
