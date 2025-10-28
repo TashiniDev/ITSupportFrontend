@@ -60,22 +60,11 @@ function LoginPage() {
       // Show welcome message
       toastService.auth.loginSuccess(userData.name);
 
-      // Navigate to role-specific dashboard after short delay
+      // Navigate to the central dashboard; DashboardPage will render the
+      // appropriate sub-dashboard based on the user's role. This keeps routing
+      // consistent and ensures the TicketCreator dashboard is only shown for
+      // ticket creators (enforced in DashboardPage).
       setTimeout(() => {
-        if (canonicalRole === 'ticket_creator' || canonicalRole === '1') {
-          navigate('/dashboard/ticket-creator');
-          return;
-        }
-        if (canonicalRole === 'it_team' || canonicalRole === '2') {
-          navigate('/dashboard/it-team');
-          return;
-        }
-        if (canonicalRole === 'department_head' || canonicalRole === '3') {
-          navigate('/dashboard/it-head');
-          return;
-        }
-
-        // Fallback
         navigate('/dashboard');
       }, 800);
       

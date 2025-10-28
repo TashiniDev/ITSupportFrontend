@@ -201,7 +201,7 @@ export const RegisterForm = ({ onRegister, onSuccess }) => {
             <ErrorMessage name="role" component="div" className="text-sm text-red-600 dark:text-red-400" />
           </div>
           
-          {values.role === 'it_team' && ( // Show category only for IT Team Members
+          {(values.role === '2' || String(values.role) === '2') && ( // Show category only for IT Team Members (role value '2')
             <div className="space-y-2">
               <Label htmlFor="category">IT Category</Label>
               <Field name="category">
