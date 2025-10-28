@@ -49,14 +49,16 @@ export const RegisterForm = ({ onRegister, onSuccess }) => {
   { value: '3', label: 'IT Head' }
   ];
 
-  // Category options (assuming these are the IT categories)
+  // Category options (sourced from the database; ids and labels match the provided rows)
   const categoryOptions = [
     { value: '1', label: 'Power Apps' },
-    { value: '2', label: 'Development' },
-    { value: '3', label: 'Server/Application' },
-    { value: '4', label: 'Network' },
-    { value: '5', label: 'HRIS' },
-    { value: '6', label: 'Hardware' }
+    { value: '2', label: 'Server Application' },
+    { value: '3', label: 'HRIS' },
+    { value: '4', label: 'Development' },
+    { value: '5', label: 'Network' },
+    { value: '6', label: 'Hardware' },
+    { value: '7', label: 'Development & Power Apps' },
+    { value: '8', label: 'Network & Hardware' }
   ];
 
   const handleSubmit = async (values, { setSubmitting, setFieldError, setStatus, resetForm }) => {

@@ -13,7 +13,7 @@ export default function DashboardHeader({ onLogout }) {
   let user = null;
   try { user = raw ? JSON.parse(raw) : null; } catch(e) { user = null; }
 
-  const displayName = user?.name || user?.email || 'User';
+  const displayName = user?.name || user?.name || 'User';
   const role = user?.role || user?.roleId || 'ticket_creator';
 
   return (

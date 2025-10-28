@@ -15,9 +15,9 @@ import DashboardHeader from '../components/DashboardHeader';
 const validationSchema = Yup.object({
   fullName: Yup.string()
     .trim()
-    .min(2, 'Full name must be at least 2 characters')
-    .max(100, 'Full name must be less than 100 characters')
-    .required('Full name is required'),
+    .min(2, 'Requester name must be at least 2 characters')
+    .max(100, 'Requester name must be less than 100 characters')
+    .required('Requester name is required'),
   department: Yup.string()
     .required('Department is required'),
   company: Yup.string()
@@ -34,7 +34,20 @@ const validationSchema = Yup.object({
     .matches(/^[0-9+\-\s()]*$/, 'Please enter a valid phone number'),
   description: Yup.string()
     .max(2000, 'Description must be less than 2000 characters')
-});
+}).test(
+  'either-type-required',
+  'Either Request Type or Issue Type must be selected',
+  function(value) {
+    const { requestType, issueType } = value;
+    if ((!requestType || requestType === '') && (!issueType || issueType === '')) {
+      return this.createError({
+        path: 'requestType',
+        message: 'Either Request Type or Issue Type must be selected'
+      });
+    }
+    return true;
+  }
+);
 
 export default function CreateTicketPage() {
   const navigate = useNavigate();
@@ -70,6 +83,14 @@ export default function CreateTicketPage() {
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState(null);
+
+  // State for request types based on selected category
+  const [isLoadingRequestTypes, setIsLoadingRequestTypes] = useState(false);
+  const [requestTypesError, setRequestTypesError] = useState(null);
+
+  // State for issue types based on selected category
+  const [isLoadingIssueTypes, setIsLoadingIssueTypes] = useState(false);
+  const [issueTypesError, setIssueTypesError] = useState(null);
 
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
@@ -124,6 +145,82 @@ export default function CreateTicketPage() {
     loadUsers();
   }, [form.category]);
 
+  // Load request types when category changes
+  useEffect(() => {
+    const loadRequestTypes = async () => {
+      if (!form.category) {
+        setLookupData(prevData => ({ 
+          ...prevData, 
+          requestTypes: [] 
+        }));
+        setForm(prevForm => ({ ...prevForm, requestType: '' }));
+        return;
+      }
+
+      try {
+        setIsLoadingRequestTypes(true);
+        setRequestTypesError(null);
+        const requestTypesData = await lookupService.getRequestTypesByCategory(form.category);
+        setLookupData(prevData => ({ 
+          ...prevData, 
+          requestTypes: Array.isArray(requestTypesData) ? requestTypesData : [] 
+        }));
+        // Reset request type when category changes
+        setForm(prevForm => ({ ...prevForm, requestType: '' }));
+      } catch (error) {
+        console.error('Failed to load request types:', error);
+        setRequestTypesError(error.message);
+        setLookupData(prevData => ({ 
+          ...prevData, 
+          requestTypes: [] 
+        }));
+        toastService.error('Failed to load request types for selected category');
+      } finally {
+        setIsLoadingRequestTypes(false);
+      }
+    };
+
+    loadRequestTypes();
+  }, [form.category]);
+
+  // Load issue types when category changes
+  useEffect(() => {
+    const loadIssueTypes = async () => {
+      if (!form.category) {
+        setLookupData(prevData => ({ 
+          ...prevData, 
+          issueTypes: [] 
+        }));
+        setForm(prevForm => ({ ...prevForm, issueType: '' }));
+        return;
+      }
+
+      try {
+        setIsLoadingIssueTypes(true);
+        setIssueTypesError(null);
+        const issueTypesData = await lookupService.getIssueTypesByCategory(form.category);
+        setLookupData(prevData => ({ 
+          ...prevData, 
+          issueTypes: Array.isArray(issueTypesData) ? issueTypesData : [] 
+        }));
+        // Reset issue type when category changes
+        setForm(prevForm => ({ ...prevForm, issueType: '' }));
+      } catch (error) {
+        console.error('Failed to load issue types:', error);
+        setIssueTypesError(error.message);
+        setLookupData(prevData => ({ 
+          ...prevData, 
+          issueTypes: [] 
+        }));
+        toastService.error('Failed to load issue types for selected category');
+      } finally {
+        setIsLoadingIssueTypes(false);
+      }
+    };
+
+    loadIssueTypes();
+  }, [form.category]);
+
   // Retry loading lookup data
   const retryLoadLookupData = () => {
     const loadLookupData = async () => {
@@ -147,8 +244,23 @@ export default function CreateTicketPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // If user selects a requestType, clear issueType and vice-versa so only one can be active
+    if (name === 'requestType' && value) {
+      setForm((s) => ({ ...s, requestType: value, issueType: '' }));
+      // clear validation errors for both fields
+      setValidationErrors((prev) => ({ ...prev, requestType: '', issueType: '' }));
+      return;
+    }
+
+    if (name === 'issueType' && value) {
+      setForm((s) => ({ ...s, issueType: value, requestType: '' }));
+      // clear validation errors for both fields
+      setValidationErrors((prev) => ({ ...prev, issueType: '', requestType: '' }));
+      return;
+    }
+
     setForm((s) => ({ ...s, [name]: value }));
-    
+
     // Clear validation error for this field when user starts typing
     if (validationErrors[name]) {
       setValidationErrors((prev) => ({
@@ -225,9 +337,12 @@ export default function CreateTicketPage() {
           errors[err.path] = err.message;
         });
         setValidationErrors(errors);
-        
+
         // Show general error message
         toastService.error('Please fix the validation errors below');
+
+        // Reset submitting flag so submit button returns to normal
+        setIsSubmitting(false);
       } else {
         // Handle other errors
         console.error('Form submission error:', error);
@@ -284,7 +399,7 @@ export default function CreateTicketPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Full Name *</Label>
+                  <Label>Requester Name *</Label>
                   <Input 
                     name="fullName" 
                     value={form.fullName} 
@@ -455,36 +570,78 @@ export default function CreateTicketPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Issue Type</Label>
-                    <Select name="issueType" value={form.issueType} onChange={handleChange} disabled={isLoadingLookups}>
+                    <Label>Issue Type *</Label>
+                    <Select 
+                      name="issueType" 
+                      value={form.issueType} 
+                      onChange={handleChange} 
+                      disabled={isLoadingIssueTypes || !form.category || !!form.requestType}
+                      className={validationErrors.issueType ? 'border-red-500' : ''}
+                    >
                       <option value="">
-                        {isLoadingLookups ? 'Loading issue types...' : 'Select issue type (optional)'}
+                        {!form.category 
+                          ? 'Select category first' 
+                          : isLoadingIssueTypes 
+                            ? 'Loading issue types...' 
+                            : 'Select issue type'
+                        }
                       </option>
                       {Array.isArray(lookupData.issueTypes) && lookupData.issueTypes.map((issueType, index) => (
                         <option key={issueType.Id || issueType.id || issueType.value || issueType._id || index} value={issueType.Id || issueType.id || issueType.value || issueType._id}>
                           {issueType.Name || issueType.name || issueType.label || issueType.title || issueType.typeName || `Issue Type ${index + 1}`}
                         </option>
                       ))}
-                      {(!Array.isArray(lookupData.issueTypes) || lookupData.issueTypes.length === 0) && !isLoadingLookups && (
-                        <option disabled>No issue types available</option>
+                      {(!Array.isArray(lookupData.issueTypes) || lookupData.issueTypes.length === 0) && !isLoadingIssueTypes && form.category && (
+                        <option disabled>No issue types available for this category</option>
                       )}
                     </Select>
+                    {issueTypesError && (
+                      <div className="text-sm text-red-600 mt-1">
+                        {issueTypesError}
+                      </div>
+                    )}
+                    {validationErrors.issueType && (
+                      <div className="text-sm text-red-600 mt-1">
+                        {validationErrors.issueType}
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <Label>Request Type</Label>
-                    <Select name="requestType" value={form.requestType} onChange={handleChange} disabled={isLoadingLookups}>
+                    <Label>Request Type *</Label>
+                    <Select 
+                      name="requestType" 
+                      value={form.requestType} 
+                      onChange={handleChange} 
+                      disabled={isLoadingRequestTypes || !form.category || !!form.issueType}
+                      className={validationErrors.requestType ? 'border-red-500' : ''}
+                    >
                       <option value="">
-                        {isLoadingLookups ? 'Loading request types...' : 'Select request type (optional)'}
+                        {!form.category 
+                          ? 'Select category first' 
+                          : isLoadingRequestTypes 
+                            ? 'Loading request types...' 
+                            : 'Select request type'
+                        }
                       </option>
                       {Array.isArray(lookupData.requestTypes) && lookupData.requestTypes.map((requestType, index) => (
                         <option key={requestType.Id || requestType.id || requestType.value || requestType._id || index} value={requestType.Id || requestType.id || requestType.value || requestType._id}>
                           {requestType.Name || requestType.name || requestType.label || requestType.title || requestType.typeName || `Request Type ${index + 1}`}
                         </option>
                       ))}
-                      {(!Array.isArray(lookupData.requestTypes) || lookupData.requestTypes.length === 0) && !isLoadingLookups && (
-                        <option disabled>No request types available</option>
+                      {(!Array.isArray(lookupData.requestTypes) || lookupData.requestTypes.length === 0) && !isLoadingRequestTypes && form.category && (
+                        <option disabled>No request types available for this category</option>
                       )}
                     </Select>
+                    {requestTypesError && (
+                      <div className="text-sm text-red-600 mt-1">
+                        {requestTypesError}
+                      </div>
+                    )}
+                    {validationErrors.requestType && (
+                      <div className="text-sm text-red-600 mt-1">
+                        {validationErrors.requestType}
+                      </div>
+                    )}
                   </div>
                 </div>
 

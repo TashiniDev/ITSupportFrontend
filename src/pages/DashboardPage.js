@@ -61,28 +61,37 @@ function DashboardPage() {
   const renderDashboard = () => {
     if (!user) return null;
 
-    // Map role IDs to role types (you'll need to adjust based on your backend)
+    console.log('Rendering dashboard for user:', user.roleId);
+
+    // Map role IDs to role types - prioritize roleId from JWT token
     const roleId = user.roleId || user.role;
+    const roleIdStr = String(roleId);
     
-    if (roleId === '3' || roleId === 'department_head') {
+    // Role ID 3 = Department Head Dashboard
+    if (roleIdStr === '3' || roleId === 'department_head') {
       return <DepartmentHeadDashboard user={user} />;
     }
     
-    if (roleId === '2' || roleId === 'it_team') {
+    // Role ID 2 = IT Team Dashboard
+    if (roleIdStr === '2' || roleId === 'it_team') {
       return <ITTeamDashboard user={user} />;
     }
     
-  return <TicketCreatorDashboard user={user} />;
+    // Role ID 1 = Ticket Creator Dashboard (default)
+    return <TicketCreatorDashboard user={user} />;
   };
 
   const getUserRoleDisplay = (user) => {
     const roleId = user.roleId || user.role;
+    const roleIdStr = String(roleId);
     
-    if (roleId === '3' || roleId === 'department_head') {
+    // Role ID 3 = Department Head
+    if (roleIdStr === '3' || roleId === 'department_head') {
       return 'IT Head';
     }
     
-    if (roleId === '2' || roleId === 'it_team') {
+    // Role ID 2 = IT Team
+    if (roleIdStr === '2' || roleId === 'it_team') {
       const categoryMap = {
         '1': 'Power Apps',
         '2': 'Development',
@@ -95,6 +104,7 @@ function DashboardPage() {
       return `IT Team - ${teamName}`;
     }
     
+    // Role ID 1 = Ticket Creator (default)
     return 'Ticket Creator';
   };
 

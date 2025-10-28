@@ -263,7 +263,7 @@ export default function TicketDetailsPage() {
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Contact Name</div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Name</div>
                   <div className="text-sm text-gray-900 dark:text-white">{ticket.fullName || 'N/A'}</div>
                 </div>
 
@@ -282,10 +282,23 @@ export default function TicketDetailsPage() {
                   <div className="text-sm text-gray-900 dark:text-white">{ticket.company?.name || ticket.company || 'N/A'}</div>
                 </div>
 
-                <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Issue Type</div>
-                  <div className="text-sm text-gray-900 dark:text-white">{ticket.issueType?.name || ticket.issueType || 'N/A'}</div>
-                </div>
+                {/* Conditionally show either Issue Type or Request Type */}
+                {ticket.issueType ? (
+                  <div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Issue Type</div>
+                    <div className="text-sm text-gray-900 dark:text-white">{ticket.issueType?.name || ticket.issueType}</div>
+                  </div>
+                ) : ticket.requestType ? (
+                  <div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Request Type</div>
+                    <div className="text-sm text-gray-900 dark:text-white">{ticket.requestType?.name || ticket.requestType}</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Type</div>
+                    <div className="text-sm text-gray-900 dark:text-white">N/A</div>
+                  </div>
+                )}
 
                 <div>
                   <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Assigned To</div>

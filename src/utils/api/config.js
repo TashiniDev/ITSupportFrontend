@@ -12,8 +12,8 @@ export const API_ENDPOINTS = {
   DEPARTMENTS: '/lookups/departments',
   COMPANIES: '/lookups/companies',
   CATEGORIES: '/lookups/categories',
-  REQUEST_TYPES: '/lookups/request-types',
-  ISSUE_TYPES: '/lookups/issue-types',
+  REQUEST_TYPES_BY_CATEGORY: '/lookups/request-types', // Base endpoint for category-specific request types
+  ISSUE_TYPES_BY_CATEGORY: '/lookups/issue-types', // Base endpoint for category-specific issue types
   
   // Users by category endpoint
   USERS_BY_CATEGORY: '/user/category'

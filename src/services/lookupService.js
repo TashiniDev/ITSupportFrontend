@@ -35,25 +35,33 @@ class LookupService {
     }
   }
 
-  // Fetch all request types
-  async getRequestTypes() {
+  // Fetch request types by category ID
+  async getRequestTypesByCategory(categoryId) {
     try {
-      const response = await apiCall(API_ENDPOINTS.REQUEST_TYPES);
+      if (!categoryId) {
+        return [];
+      }
+      const response = await apiCall(`${API_ENDPOINTS.REQUEST_TYPES_BY_CATEGORY}/${categoryId}`);
+      console.log('Request types API response for category', categoryId, ':', response);
       return response.data || response;
     } catch (error) {
-      console.error('Error fetching request types:', error);
-      throw new Error('Failed to fetch request types');
+      console.error('Error fetching request types by category:', error);
+      throw new Error('Failed to fetch request types for selected category');
     }
   }
 
-  // Fetch all issue types
-  async getIssueTypes() {
+  // Fetch issue types by category ID
+  async getIssueTypesByCategory(categoryId) {
     try {
-      const response = await apiCall(API_ENDPOINTS.ISSUE_TYPES);
+      if (!categoryId) {
+        return [];
+      }
+      const response = await apiCall(`${API_ENDPOINTS.ISSUE_TYPES_BY_CATEGORY}/${categoryId}`);
+      console.log('Issue types API response for category', categoryId, ':', response);
       return response.data || response;
     } catch (error) {
-      console.error('Error fetching issue types:', error);
-      throw new Error('Failed to fetch issue types');
+      console.error('Error fetching issue types by category:', error);
+      throw new Error('Failed to fetch issue types for selected category');
     }
   }
 
@@ -72,23 +80,21 @@ class LookupService {
     }
   }
 
-  // Fetch all lookup data at once
+  // Fetch all lookup data at once (excluding request types and issue types which are loaded by category)
   async getAllLookupData() {
     try {
-      const [departments, companies, categories, requestTypes, issueTypes] = await Promise.all([
+      const [departments, companies, categories] = await Promise.all([
         this.getDepartments(),
         this.getCompanies(),
-        this.getCategories(),
-        this.getRequestTypes(),
-        this.getIssueTypes()
+        this.getCategories()
       ]);
 
       const result = {
         departments: Array.isArray(departments) ? departments : [],
         companies: Array.isArray(companies) ? companies : [],
         categories: Array.isArray(categories) ? categories : [],
-        requestTypes: Array.isArray(requestTypes) ? requestTypes : [],
-        issueTypes: Array.isArray(issueTypes) ? issueTypes : []
+        requestTypes: [], // Will be loaded separately based on selected category
+        issueTypes: [] // Will be loaded separately based on selected category
       };
 
       console.log('Final lookup data structure:', result);

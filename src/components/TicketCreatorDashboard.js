@@ -286,10 +286,23 @@ export default function TicketCreatorDashboard() {
                         {ticket.category?.name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                        <div>
-                          <div className="font-medium">Issue: {ticket.issueType?.name || ticket.issueType || 'troubleshooting'}</div>
-                          <div className="text-gray-500 dark:text-gray-400">Request: {ticket.requestType?.name || ticket.requestType || ticket.description?.substring(0, 30) + '...' || 'N/A'}</div>
-                        </div>
+                        {/* Conditionally show either Issue Type or Request Type */}
+                        {ticket.issueType ? (
+                          <div>
+                            <div className="font-medium text-blue-600 dark:text-blue-400">Issue Type</div>
+                            <div className="text-gray-900 dark:text-white">{ticket.issueType?.name || ticket.issueType}</div>
+                          </div>
+                        ) : ticket.requestType ? (
+                          <div>
+                            <div className="font-medium text-green-600 dark:text-green-400">Request Type</div>
+                            <div className="text-gray-900 dark:text-white">{ticket.requestType?.name || ticket.requestType}</div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Type</div>
+                            <div className="text-gray-500 dark:text-gray-400">N/A</div>
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${

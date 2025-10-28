@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 import { LoginForm } from '../components/LoginForm';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
@@ -43,8 +44,23 @@ function LoginPage() {
       // Store token and user data
       localStorage.setItem('authToken', response.token);
       
+      // Decode JWT token to get role ID
+      let roleId = null;
+      let decodedToken = null;
+      
+      try {
+        decodedToken = jwtDecode(response.token);
+        roleId = decodedToken.roleId || decodedToken.role_id || decodedToken.role;
+        console.log('Decoded token:', decodedToken);
+        console.log('Extracted roleId:', roleId);
+      } catch (decodeError) {
+        console.warn('Failed to decode JWT token:', decodeError);
+        // Fallback to response data if token decode fails
+        roleId = response.user.role || response.user.roleId || 'ticket_creator';
+      }
+      
       // Create user object based on your backend response
-      const canonicalRole = normalizeRole(response.user.role || response.user.roleId || 'ticket_creator') || 'ticket_creator';
+      const canonicalRole = normalizeRole(roleId || 'ticket_creator') || 'ticket_creator';
 
       const userData = {
         id: response.user.uid,
@@ -52,6 +68,7 @@ function LoginPage() {
         email: response.user.email,
         name: response.user.name || email.split('@')[0], // Use name from response or fallback
         role: canonicalRole,
+        roleId: roleId, // Store original role ID for navigation
         team: response.user.team || null
       };
       
@@ -60,12 +77,25 @@ function LoginPage() {
       // Show welcome message
       toastService.auth.loginSuccess(userData.name);
 
-      // Navigate to the central dashboard; DashboardPage will render the
-      // appropriate sub-dashboard based on the user's role. This keeps routing
-      // consistent and ensures the TicketCreator dashboard is only shown for
-      // ticket creators (enforced in DashboardPage).
+      // Navigate based on role ID
+      let dashboardRoute = '/dashboard';
+      
+      // Convert roleId to string for comparison
+      const roleIdStr = String(roleId);
+      
+      if (roleIdStr === '1' || canonicalRole === 'ticket_creator') {
+        dashboardRoute = '/dashboard'; // Ticket Creator Dashboard
+        console.log('Navigating to Ticket Creator Dashboard');
+      } else if (roleIdStr === '2' || canonicalRole === 'it_team') {
+        dashboardRoute = '/dashboard'; // IT Team Dashboard
+        console.log('Navigating to IT Team Dashboard');
+      } else if (roleIdStr === '3' || canonicalRole === 'department_head') {
+        dashboardRoute = '/dashboard'; // Department Head Dashboard
+        console.log('Navigating to Department Head Dashboard');
+      }
+
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate(dashboardRoute);
       }, 800);
       
     } catch (error) {
