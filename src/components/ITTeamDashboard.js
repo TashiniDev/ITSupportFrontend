@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
-export const AdminDashboard = ({ user, session }) => {
+export const ITTeamDashboard = ({ user, session }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

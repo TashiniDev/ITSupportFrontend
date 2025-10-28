@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TicketCreatorDashboard from '../components/TicketCreatorDashboard';
-import { AdminDashboard } from '../components/AdminDashboard';
+import { ITTeamDashboard } from '../components/ITTeamDashboard';
 import { DepartmentHeadDashboard } from '../components/DepartmentHeadDashboard';
 import { useTheme } from '../components/ThemeProvider';
 import { LogoutDialog } from '../components/LogoutDialog';
@@ -69,7 +69,7 @@ function DashboardPage() {
     }
     
     if (roleId === '2' || roleId === 'it_team') {
-      return <AdminDashboard user={user} />;
+      return <ITTeamDashboard user={user} />;
     }
     
   return <TicketCreatorDashboard user={user} />;

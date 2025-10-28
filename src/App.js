@@ -8,7 +8,7 @@ import {
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import TicketCreatorDashboard from "./components/TicketCreatorDashboard";
-import { AdminDashboard } from "./components/AdminDashboard";
+import { ITTeamDashboard } from "./components/ITTeamDashboard";
 import { DepartmentHeadDashboard } from "./components/DepartmentHeadDashboard";
 import CreateTicketPage from './pages/CreateTicketPage';
 import TicketDetailsPage from './pages/TicketDetailsPage';
