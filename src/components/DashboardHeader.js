@@ -22,7 +22,7 @@ export default function DashboardHeader({ onLogout }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-3">
-            <PrintcareLogoPlaceholder className="h-10 w-10" alt="IT Supporter Logo" />
+         <PrintcareLogoPlaceholder className="h-15 w-12 scale-150 origin-center" alt="IT Supporter Logo" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IT Supporter</h1>
           </div>
 

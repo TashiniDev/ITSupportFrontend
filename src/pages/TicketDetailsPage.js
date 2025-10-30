@@ -36,18 +36,19 @@ export default function TicketDetailsPage() {
   }, [ticketId, navigate]);
 
   // Load comments from separate endpoint
-  useEffect(() => {
-    const loadComments = async () => {
-      try {
-        const response = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/comments`);
-        setComments(response.data || response || []);
-      } catch (error) {
-        console.error('Failed to load comments:', error);
-        // Don't show error toast for comments as it's not critical
-        setComments([]);
-      }
-    };
+  // Extracted loader so it can be called from multiple places (initial load and after posting a comment)
+  const loadComments = async () => {
+    try {
+      const response = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/comments`);
+      setComments(response.data || response || []);
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+      // Don't show error toast for comments as it's not critical
+      setComments([]);
+    }
+  };
 
+  useEffect(() => {
     if (ticketId) {
       loadComments();
     }
@@ -62,8 +63,8 @@ export default function TicketDetailsPage() {
         body: JSON.stringify({ comment: comment.trim() })
       });
 
-      // Add the new comment to the list
-      setComments([...comments, response.data || { comment: comment.trim(), createdAt: new Date().toISOString() }]);
+      // Reload comments from server so the list is authoritative and updated
+      await loadComments();
       setComment('');
       toastService.success('Comment added successfully');
     } catch (error) {
@@ -134,7 +135,8 @@ export default function TicketDetailsPage() {
                   </h1>
                   <div className="flex space-x-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      ticket.status === 'Open' || ticket.status === 'New' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                      // Status colors: New/Open -> Indigo, Processing -> Orange, Completed -> Green, default -> Gray
+                      ticket.status === 'Open' || ticket.status === 'New' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
                       ticket.status === 'Processing' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                       ticket.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                       'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
@@ -142,8 +144,11 @@ export default function TicketDetailsPage() {
                       {ticket.status}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      ticket.priority === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                      // Priority colors: Low -> Teal, Medium -> Yellow, High -> Red, Critical -> Violet, default -> Gray
+                      ticket.priority === 'Low' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200' :
                       ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                      ticket.priority === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                      ticket.priority === 'Critical' ? 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' :
                       'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                     }`}>
                       {ticket.priority}
