@@ -74,11 +74,17 @@ export const apiCall = async (endpoint, options = {}) => {
       if (response.status === 401) {
         try {
           localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
         } catch (e) {
           // ignore
         }
         // Redirect to login page (will reload the app)
-        try { window.location.href = '/login'; } catch (e) { /* ignore in non-browser env */ }
+        try { 
+          // Use a small delay to ensure cleanup is complete
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        } catch (e) { /* ignore in non-browser env */ }
         throw new Error((data && data.message) || 'Unauthorized');
       }
 

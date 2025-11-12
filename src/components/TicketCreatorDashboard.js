@@ -8,7 +8,6 @@ import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 
 export default function TicketCreatorDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -22,15 +21,7 @@ export default function TicketCreatorDashboard() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  useEffect(() => {
-    const raw = localStorage.getItem('userData');
-    if (!raw) return;
-    try {
-      setUser(JSON.parse(raw));
-    } catch (e) {
-      console.warn('invalid userData', e);
-    }
-  }, []);
+  // user info is provided via parent props or localStorage elsewhere; avoid unused local state here
 
   // Load categories for filter
   useEffect(() => {
@@ -116,6 +107,7 @@ export default function TicketCreatorDashboard() {
   };
 
   // Load tickets on mount and when filters change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTickets(1);
   }, [selectedCategory, selectedAssignedTo, dateFrom, dateTo]);

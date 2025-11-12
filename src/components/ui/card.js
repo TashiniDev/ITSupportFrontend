@@ -22,6 +22,7 @@ const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
 ));
 CardHeader.displayName = 'CardHeader';
 
+/* eslint-disable-next-line jsx-a11y/heading-has-content */
 const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
   <h3
     ref={ref}

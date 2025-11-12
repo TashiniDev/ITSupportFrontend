@@ -3,35 +3,48 @@ import { useNavigate } from 'react-router-dom';
 import TicketCreatorDashboard from '../components/TicketCreatorDashboard';
 import ITTeamDashboard from '../components/ITTeamDashboard';
 import { DepartmentHeadDashboard } from '../components/DepartmentHeadDashboard';
-import { useTheme } from '../components/ThemeProvider';
+// removed unused useTheme import
 import { LogoutDialog } from '../components/LogoutDialog';
-import { Button } from '../components/ui/button';
 import DashboardHeader from '../components/DashboardHeader';
-import { Menu } from 'lucide-react';
-import { normalizeRole, roleLabel } from '../utils/roleUtils';
+import { normalizeRole } from '../utils/roleUtils';
+import toastService from '../services/toastService';
 
 function DashboardPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkUser();
-  }, []);
+    const checkUser = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const userDataString = localStorage.getItem('userData');
 
-  const checkUser = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-      
-      if (!token || !userData.uid) {
-        navigate('/login');
-        return;
-      }
-      
+        if (!token || !userDataString) {
+          navigate('/login');
+          return;
+        }
+
+        let userData;
+        try {
+          userData = JSON.parse(userDataString);
+        } catch (parseError) {
+          console.error('Failed to parse userData:', parseError);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+          navigate('/login');
+          return;
+        }
+
+        if (!userData.uid) {
+          console.log('No valid user ID found');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+          navigate('/login');
+          return;
+        }
+
         const canonical = normalizeRole(userData.role || userData.roleId);
         if (canonical) {
           userData.role = canonical;
@@ -40,22 +53,48 @@ function DashboardPage() {
         }
 
         setUser(userData);
-    } catch (error) {
-      console.log('Session check error:', error);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      navigate('/login');
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch (error) {
+        console.log('Session check error:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        navigate('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+  }, [navigate]);
 
   const handleLogout = async () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-    setUser(null);
-    setShowLogoutDialog(false);
-    navigate('/login');
+    try {
+      // First, immediately clear authentication state
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      
+      // Clear user state immediately
+      setUser(null);
+      
+      // Close the dialog
+      setShowLogoutDialog(false);
+      
+      // Show logout success message
+      toastService.auth.logoutSuccess();
+      
+      // Small delay to ensure state updates are processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, ensure we clean up and redirect
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      setUser(null);
+      setShowLogoutDialog(false);
+      navigate('/login');
+    }
   };
 
   const renderDashboard = () => {
@@ -81,32 +120,7 @@ function DashboardPage() {
     return <TicketCreatorDashboard user={user} />;
   };
 
-  const getUserRoleDisplay = (user) => {
-    const roleId = user.roleId || user.role;
-    const roleIdStr = String(roleId);
-    
-    // Role ID 3 = Department Head
-    if (roleIdStr === '3' || roleId === 'department_head') {
-      return 'IT Head';
-    }
-    
-    // Role ID 2 = IT Team
-    if (roleIdStr === '2' || roleId === 'it_team') {
-      const categoryMap = {
-        '1': 'Power Apps',
-        '2': 'Development',
-        '3': 'Server/Application',
-        '4': 'Network',
-        '5': 'HRIS',
-        '6': 'Hardware'
-      };
-      const teamName = categoryMap[user.categoryId] || 'IT Team';
-      return `IT Team - ${teamName}`;
-    }
-    
-    // Role ID 1 = Ticket Creator (default)
-    return 'Ticket Creator';
-  };
+  // getUserRoleDisplay removed - unused helper
 
   if (loading) {
     return (

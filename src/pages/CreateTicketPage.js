@@ -10,6 +10,8 @@ import toastService from '../services/toastService';
 import lookupService from '../services/lookupService';
 import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 import DashboardHeader from '../components/DashboardHeader';
+import { LogoutDialog } from '../components/LogoutDialog';
+import { X, Paperclip, FileText, Image, FileType } from 'lucide-react';
 
 // Validation schema for the form
 const validationSchema = Yup.object({
@@ -26,9 +28,9 @@ const validationSchema = Yup.object({
     .required('Category is required'),
   assignedTo: Yup.string()
     .required('Assign to user is required'),
-  priority: Yup.string()
-    .oneOf(['Low', 'Medium', 'High', 'Critical'], 'Please select a valid priority')
-    .required('Priority level is required'),
+  seniority: Yup.string()
+    .oneOf(['Low', 'Medium', 'High', 'Critical'], 'Please select a valid seniority')
+    .required('Seniority level is required'),
   // Optional fields validation
   contactNumber: Yup.string()
     .matches(/^[0-9+\-\s()]*$/, 'Please enter a valid phone number'),
@@ -60,7 +62,7 @@ export default function CreateTicketPage() {
     assignedTo: '',
     issueType: '',
     requestType: '',
-    priority: '',
+    seniority: '',
     description: '',
   });
 
@@ -95,6 +97,7 @@ export default function CreateTicketPage() {
   // Validation errors state
   const [validationErrors, setValidationErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Load lookup data on component mount
   useEffect(() => {
@@ -272,7 +275,93 @@ export default function CreateTicketPage() {
 
   const handleFile = (e) => {
     const files = Array.from(e.target.files || []);
-    setAttachments((a) => [...a, ...files]);
+    const allowedTypes = [
+      'image/png', 'image/jpg', 'image/jpeg', 
+      'application/pdf', 'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    const validFiles = [];
+    const invalidFiles = [];
+
+    files.forEach(file => {
+      if (!allowedTypes.includes(file.type)) {
+        invalidFiles.push({ file: file.name, reason: 'Invalid file type' });
+      } else if (file.size > maxSize) {
+        invalidFiles.push({ file: file.name, reason: 'File too large (max 10MB)' });
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      const errorMessage = invalidFiles.map(item => `${item.file}: ${item.reason}`).join('\n');
+      toastService.error(`Some files could not be uploaded:\n${errorMessage}`);
+    }
+
+    if (validFiles.length > 0) {
+      setAttachments((a) => [...a, ...validFiles]);
+      toastService.success(`${validFiles.length} file(s) uploaded successfully`);
+    }
+  };
+
+  const getFileIcon = (fileName) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(extension)) {
+      return <Image className="h-4 w-4 text-blue-500" />;
+    } else if (['pdf'].includes(extension)) {
+      return <FileType className="h-4 w-4 text-red-500" />;
+    } else if (['doc', 'docx', 'txt'].includes(extension)) {
+      return <FileText className="h-4 w-4 text-blue-600" />;
+    } else {
+      return <Paperclip className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const isImageFile = (file) => {
+    return file.type.startsWith('image/');
+  };
+
+  const createImagePreview = (file) => {
+    return URL.createObjectURL(file);
+  };
+
+  const removeAttachment = (indexToRemove) => {
+    const removedFile = attachments[indexToRemove];
+    setAttachments((a) => a.filter((_, index) => index !== indexToRemove));
+    toastService.success(`Removed ${removedFile.name}`);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length > 0) {
+      // Create a fake event object to reuse the existing handleFile logic
+      const fakeEvent = {
+        target: { files: files }
+      };
+      handleFile(fakeEvent);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -300,7 +389,7 @@ export default function CreateTicketPage() {
       if (form.assignedTo) formData.append('assignedTo', form.assignedTo);
       if (form.issueType) formData.append('issueType', form.issueType);
       if (form.requestType) formData.append('requestType', form.requestType);
-      if (form.priority) formData.append('priority', form.priority);
+      if (form.seniority) formData.append('seniority', form.seniority);
       if (form.description) formData.append('description', form.description);
 
       // Append files. Many backends accept multiple parts with same key 'attachments'
@@ -318,8 +407,15 @@ export default function CreateTicketPage() {
         });
 
         toastService.dismiss(toastId);
-        toastService.success('Ticket created successfully');
-        // Optionally use id from response (e.g., response.ticketId)
+        
+        // Show success message with ticket ID if available
+        const ticketId = response?.ticketId || response?.id || response?.data?.id;
+        if (ticketId) {
+          toastService.success(`Ticket created successfully! ID: ${ticketId}`);
+        } else {
+          toastService.success('Ticket created successfully');
+        }
+        
         navigate('/dashboard');
       } catch (err) {
         toastService.dismiss(toastId);
@@ -352,9 +448,36 @@ export default function CreateTicketPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      // First, immediately clear authentication state
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      
+      // Close the dialog
+      setShowLogoutDialog(false);
+      
+      // Show logout success message
+      toastService.auth.logoutSuccess();
+      
+      // Small delay to ensure state updates are processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, ensure we clean up and redirect
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      setShowLogoutDialog(false);
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8">
-      <DashboardHeader onLogout={() => navigate('/login')} />
+      <DashboardHeader onLogout={() => setShowLogoutDialog(true)} />
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-6">
           <Button onClick={() => navigate(-1)} variant="ghost">&larr; Back to Tickets</Button>
@@ -646,22 +769,22 @@ export default function CreateTicketPage() {
                 </div>
 
                 <div>
-                  <Label>Priority Level *</Label>
+                  <Label>Seniority Level *</Label>
                   <Select 
-                    name="priority" 
-                    value={form.priority} 
+                    name="seniority" 
+                    value={form.seniority} 
                     onChange={handleChange}
-                    className={validationErrors.priority ? 'border-red-500' : ''}
+                    className={validationErrors.seniority ? 'border-red-500' : ''}
                   >
-                    <option value="">Select priority level</option>
+                    <option value="">Select seniority level</option>
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                     <option value="Critical">Critical</option>
                   </Select>
-                  {validationErrors.priority && (
+                  {validationErrors.seniority && (
                     <div className="text-sm text-red-600 mt-1">
-                      {validationErrors.priority}
+                      {validationErrors.seniority}
                     </div>
                   )}
                 </div>
@@ -675,7 +798,7 @@ export default function CreateTicketPage() {
             </CardHeader>
             <CardContent>
               <Label>Detailed Problem Description</Label>
-              <textarea name="description" value={form.description} onChange={handleChange} rows={6} className="w-full rounded-md border-gray-200 bg-gray-50 p-3 dark:bg-[rgb(6,8,10)] dark:border-gray-800 dark:text-gray-200" placeholder="Please provide (optional):\n- What exactly happened?\n- When did it start?\n- Steps you've already tried\n- Any error messages\n- Impact on your work" />
+               <textarea name="description" value={form.description} onChange={handleChange} rows={6} className="w-full rounded-md border-gray-200 bg-gray-50 p-3 dark:bg-blue-900/50 dark:border-blue-600 dark:text-white dark:placeholder:text-blue-300" placeholder="Please provide (optional):\n- What exactly happened?\n- When did it start?\n- Steps you've already tried\n- Any error messages\n- Impact on your work" />
             </CardContent>
           </Card>
 
@@ -684,17 +807,102 @@ export default function CreateTicketPage() {
               <div className="text-xl text-gray-900 dark:text-white">Screenshots & Attachments</div>
             </CardHeader>
             <CardContent>
-              <div className="border-dashed border-2 border-gray-200 rounded-md p-6 text-center dark:border-gray-800 dark:bg-[rgb(6,8,10)]">
-                <input type="file" multiple onChange={handleFile} />
-                <div className="text-sm text-gray-500 mt-2">Click to upload files or drag and drop. Screenshots, PNG, JPG, PDF, DOC, TXT files up to 10MB</div>
-                {attachments.length > 0 && (
-                  <ul className="mt-3 text-left text-sm text-gray-700">
-                    {attachments.map((f, i) => (
-                      <li key={i}>{f.name} ({Math.round(f.size/1024)} KB)</li>
-                    ))}
-                  </ul>
-                )}
+              <div 
+                className="border-dashed border-2 border-gray-200 rounded-md p-6 text-center dark:border-gray-800 dark:bg-[rgb(6,8,10)] hover:border-blue-300 transition-colors"
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="space-y-2">
+                  <Paperclip className="h-8 w-8 text-gray-400 mx-auto" />
+                  <div>
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <span className="mt-2 block text-sm font-medium text-blue-600 hover:text-blue-500">
+                        Choose Files
+                      </span>
+                      <input 
+                        id="file-upload"
+                        type="file" 
+                        multiple 
+                        onChange={handleFile}
+                        className="hidden"
+                        accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.txt"
+                      />
+                    </label>
+                  </div>
+                  <div className="text-sm text-gray-500">Click to upload files or drag and drop. Screenshots, PNG, JPG, PDF, DOC, TXT files up to 10MB</div>
+                </div>
               </div>
+              
+              {/* Attachment List */}
+              {attachments.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Attached Files ({attachments.length})
+                    </h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAttachments([]);
+                        toastService.success('All attachments removed');
+                      }}
+                      className="text-red-500 hover:text-red-700 text-xs"
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {attachments.map((file, index) => (
+                      <div 
+                        key={index}
+                        className="relative flex flex-col bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm min-w-[140px] max-w-[160px] overflow-hidden"
+                      >
+                        {/* Remove button - positioned at top right */}
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(index)}
+                          className="absolute top-2 right-2 z-20 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white w-7 h-7 rounded-full shadow-lg border-2 border-white flex items-center justify-center transition-all duration-200 cursor-pointer transform hover:scale-110"
+                          style={{ zIndex: 20 }}
+                        >
+                          <X className="h-4 w-4 stroke-2 text-white" />
+                        </button>
+                        
+                        {/* File preview/icon */}
+                        <div className="p-3 flex items-center justify-center h-24 bg-gray-50 dark:bg-gray-700">
+                          {isImageFile(file) ? (
+                            <img 
+                              src={createImagePreview(file)} 
+                              alt={file.name}
+                              className="max-h-full max-w-full object-contain rounded"
+                            />
+                          ) : (
+                            <div className="text-center">
+                              {getFileIcon(file.name)}
+                              <div className="text-xs text-gray-500 mt-1 uppercase font-semibold">
+                                {file.name.split('.').pop()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* File info */}
+                        <div className="p-2 bg-gray-50 dark:bg-gray-700 border-t">
+                          <div className="text-xs font-medium text-gray-900 dark:text-white truncate" title={file.name}>
+                            {file.name}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            ({Math.round(file.size / 1024)} KB)
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -710,6 +918,12 @@ export default function CreateTicketPage() {
           </div>
         </form>
       </div>
+
+      <LogoutDialog 
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 }

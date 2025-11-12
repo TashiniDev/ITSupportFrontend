@@ -4,7 +4,6 @@ import { jwtDecode } from 'jwt-decode';
 import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 import { LoginForm } from '../components/LoginForm';
 import ForgotPasswordModal from '../components/ForgotPasswordModal';
-import { RegisterForm } from '../components/RegisterForm';
 import { useTheme } from '../components/ThemeProvider';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
@@ -22,11 +21,31 @@ function LoginPage() {
 
   // Check for authentication on component mount
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      toastService.info('You are already logged in. Redirecting to dashboard...');
-      navigate('/dashboard');
-    }
+    // Use a small timeout to allow any logout cleanup to complete
+    const checkAuth = () => {
+      const token = localStorage.getItem('authToken');
+      const userData = localStorage.getItem('userData');
+      
+      // Only redirect if we have both token and userData
+      if (token && userData) {
+        try {
+          const parsedUserData = JSON.parse(userData);
+          if (parsedUserData && parsedUserData.uid) {
+            toastService.info('You are already logged in. Redirecting to dashboard...');
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          // If userData is corrupted, clear it
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+        }
+      }
+    };
+
+    // Small delay to ensure any logout cleanup is complete
+    const timeoutId = setTimeout(checkAuth, 50);
+    
+    return () => clearTimeout(timeoutId);
   }, [navigate]);
 
   // Handle successful tab switch
@@ -104,19 +123,7 @@ function LoginPage() {
     }
   };
 
-  const handleRegister = async (userData) => {
-    try {
-      const response = await apiCall(API_ENDPOINTS.REGISTER, {
-        method: 'POST',
-        body: JSON.stringify(userData)
-      });
-
-      return response;
-    } catch (error) {
-      console.log('Registration error:', error);
-      throw error;
-    }
-  };
+  // Registration moved to dashboard header for Ticket Creators
 
   const handleForgotPasswordOpen = () => {
     setForgotOpen(true);
@@ -191,25 +198,14 @@ function LoginPage() {
                   >
                     Login
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="register"
-                    active={activeTab === 'register'}
-                    onClick={() => handleTabChange('register')}
-                  >
-                    Register
-                  </TabsTrigger>
+                  {/* Register tab removed - registration is available from dashboard for Ticket Creators */}
                 </TabsList>
                 
                 <TabsContent value="login" activeTab={activeTab} className="mt-0">
                   <LoginForm onLogin={handleLogin} onOpenForgot={handleForgotPasswordOpen} />
                 </TabsContent>
                 
-                <TabsContent value="register" activeTab={activeTab} className="mt-0">
-                  <RegisterForm 
-                    onRegister={handleRegister} 
-                    onSuccess={() => handleTabChange('login')}
-                  />
-                </TabsContent>
+                {/* Register form removed from login page */}
               </Tabs>
             </CardContent>
           </Card>

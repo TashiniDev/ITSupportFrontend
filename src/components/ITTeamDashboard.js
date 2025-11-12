@@ -8,7 +8,6 @@ import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 
 export default function ITTeamDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [userCategoryId, setUserCategoryId] = useState(null);
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -22,15 +21,7 @@ export default function ITTeamDashboard() {
   const [editingTicketId, setEditingTicketId] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  useEffect(() => {
-    const raw = localStorage.getItem('userData');
-    if (!raw) return;
-    try {
-      setUser(JSON.parse(raw));
-    } catch (e) {
-      console.warn('invalid userData', e);
-    }
-  }, []);
+  // user info is provided via parent props or localStorage elsewhere; avoid unused local state here
 
   // Load users when userCategoryId is available
   useEffect(() => {
@@ -97,6 +88,7 @@ export default function ITTeamDashboard() {
   };
 
   // Load tickets on mount and when filters change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTickets(1);
   }, [selectedAssignedTo, dateFrom, dateTo]);

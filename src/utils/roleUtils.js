@@ -13,8 +13,8 @@ export function normalizeRole(input) {
   if (ROLE_MAP_BY_ID[s]) return ROLE_MAP_BY_ID[s];
 
   // Common string variants
-  if (s === 'ticket_creator' || s.includes('ticket') && s.includes('creator')) return 'ticket_creator';
-  if (s === 'it_team' || s.includes('it') && s.includes('team')) return 'it_team';
+  if (s === 'ticket_creator' || (s.includes('ticket') && s.includes('creator'))) return 'ticket_creator';
+  if (s === 'it_team' || (s.includes('it') && s.includes('team'))) return 'it_team';
   if (s === 'department_head' || s.includes('head') || s.includes('department')) return 'department_head';
 
   // Fallback: return original string (caller should handle unexpected values)

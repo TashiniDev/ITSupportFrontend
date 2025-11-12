@@ -8,7 +8,6 @@ import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 
 export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -29,15 +28,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
   const [isLoadingAssignmentUsers, setIsLoadingAssignmentUsers] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  useEffect(() => {
-    const raw = localStorage.getItem('userData');
-    if (!raw) return;
-    try {
-      setUser(JSON.parse(raw));
-    } catch (e) {
-      console.warn('invalid userData', e);
-    }
-  }, []);
+  // user is provided via props (`propUser`) in this component; avoid local unused state
 
   // Load categories for filter
   useEffect(() => {
@@ -121,6 +112,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
   };
 
   // Load tickets on mount and when filters change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTickets(1);
   }, [selectedCategory, selectedAssignedTo, dateFrom, dateTo]);

@@ -1,13 +1,17 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+// registration for ticket creators will be available via modal
 import { Button } from './ui/button';
-import { ITSupportImage, PrintcareLogoPlaceholder } from './ImagePlaceholders';
+import { PrintcareLogoPlaceholder } from './ImagePlaceholders';
 import { LogOut, Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import { normalizeRole } from '../utils/roleUtils';
+import { RegisterForm } from './RegisterForm';
+import { apiCall, API_ENDPOINTS } from '../utils/api/config';
+import toastService from '../services/toastService';
 
 export default function DashboardHeader({ onLogout }) {
-  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const [showRegister, setShowRegister] = useState(false);
 
   const raw = localStorage.getItem('userData');
   let user = null;
@@ -15,6 +19,7 @@ export default function DashboardHeader({ onLogout }) {
 
   const displayName = user?.name || user?.name || 'User';
   const role = user?.role || user?.roleId || 'ticket_creator';
+  const normalizedRole = normalizeRole(role);
 
   return (
     <>
@@ -29,12 +34,15 @@ export default function DashboardHeader({ onLogout }) {
           <div className="hidden md:flex items-center space-x-4">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               Welcome, <span className="font-medium">{displayName}</span>
-              <button
-                onClick={() => navigate('/tickets/create')}
-                className="ml-2 inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs"
-              >
+              <span className="ml-2 inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
                 {role === 'it_team' ? 'IT Team' : role === 'department_head' ? 'IT Head' : 'Ticket Creator'}
-              </button>
+              </span>
+              {/* Show Register button only to Ticket Creators */}
+              {normalizedRole === 'ticket_creator' && (
+                <Button onClick={() => setShowRegister(true)} variant="outline" size="sm" className="ml-2">
+                  Register
+                </Button>
+              )}
             </div>
 
             <Button onClick={toggleTheme} variant="outline" size="sm">
@@ -47,9 +55,30 @@ export default function DashboardHeader({ onLogout }) {
             </Button>
           </div>
 
-          <div className="md:hidden">
-            <Button onClick={() => navigate('/tickets/create')} variant="outline" size="sm">Create</Button>
-          </div>
+          {/* mobile actions removed - no Create button for any role */}
+          {/* Register modal (simple) */}
+          {showRegister && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full mx-4 p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-medium">Register New User</h3>
+                  <Button onClick={() => setShowRegister(false)} variant="ghost">Close</Button>
+                </div>
+                <div>
+                  <RegisterForm onRegister={async (userData) => {
+                    try {
+                      const resp = await apiCall(API_ENDPOINTS.REGISTER, { method: 'POST', body: JSON.stringify(userData) });
+                      toastService.success('Account created successfully!');
+                      return resp;
+                    } catch (err) {
+                      console.error('Registration failed:', err);
+                      throw err;
+                    }
+                  }} onSuccess={() => setShowRegister(false)} />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         </div>
       </header>

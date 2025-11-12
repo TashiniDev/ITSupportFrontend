@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 import toastService from '../services/toastService';
 import DashboardHeader from '../components/DashboardHeader';
+import { LogoutDialog } from '../components/LogoutDialog';
 
 export default function TicketDetailsPage() {
   const navigate = useNavigate();
@@ -13,6 +14,18 @@ export default function TicketDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('userData');
+    if (!raw) return;
+    try {
+      setCurrentUser(JSON.parse(raw));
+    } catch (e) {
+      console.warn('Invalid userData in localStorage', e);
+    }
+  }, []);
 
   // Load ticket details
   useEffect(() => {
@@ -50,6 +63,7 @@ export default function TicketDetailsPage() {
 
   useEffect(() => {
     if (ticketId) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       loadComments();
     }
   }, [ticketId]);
@@ -58,7 +72,7 @@ export default function TicketDetailsPage() {
     if (!comment.trim()) return;
 
     try {
-      const response = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/comments`, {
+      await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/comments`, {
         method: 'POST',
         body: JSON.stringify({ comment: comment.trim() })
       });
@@ -73,12 +87,42 @@ export default function TicketDetailsPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      // First, immediately clear authentication state
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      
+      // Clear user state immediately
+      setCurrentUser(null);
+      
+      // Close the dialog
+      setShowLogoutDialog(false);
+      
+      // Show logout success message
+      toastService.auth.logoutSuccess();
+      
+      // Small delay to ensure state updates are processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if there's an error, ensure we clean up and redirect
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      setCurrentUser(null);
+      setShowLogoutDialog(false);
+      navigate('/login');
+    }
+  };
 
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <DashboardHeader onLogout={() => navigate('/login')} />
+        <DashboardHeader onLogout={() => setShowLogoutDialog(true)} />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -92,7 +136,7 @@ export default function TicketDetailsPage() {
   if (!ticket) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <DashboardHeader onLogout={() => navigate('/login')} />
+        <DashboardHeader onLogout={() => setShowLogoutDialog(true)} />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ticket Not Found</h1>
@@ -107,7 +151,7 @@ export default function TicketDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <DashboardHeader onLogout={() => navigate('/login')} />
+      <DashboardHeader onLogout={() => setShowLogoutDialog(true)} />
       
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
@@ -129,30 +173,18 @@ export default function TicketDetailsPage() {
             {/* Ticket Header */}
             <Card className="bg-white dark:bg-gray-900 dark:border-gray-700">
               <CardContent className="p-6">
+                <div className="mb-6">
+                  <p className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">
+                    This Ticket Requested By <span className="font-bold">{ticket.fullName || 'Requester Name Not Provided'}</span>
+                  </p>
+                </div>
                 <div className="flex items-start justify-between mb-4">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {ticket.title || ticket.fullName || 'Ticket Details'}
+                     
                   </h1>
                   <div className="flex space-x-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      // Status colors: New/Open -> Indigo, Processing -> Orange, Completed -> Green, default -> Gray
-                      ticket.status === 'Open' || ticket.status === 'New' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
-                      ticket.status === 'Processing' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                      ticket.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}>
-                      {ticket.status}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      // Priority colors: Low -> Teal, Medium -> Yellow, High -> Red, Critical -> Violet, default -> Gray
-                      ticket.priority === 'Low' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200' :
-                      ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                      ticket.priority === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                      ticket.priority === 'Critical' ? 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}>
-                      {ticket.priority}
-                    </span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg`}>Status: {ticket.status}</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-teal-500 to-teal-700 text-white shadow-lg`}>Seniority: {ticket.seniority}</span>
                   </div>
                 </div>
 
@@ -164,33 +196,115 @@ export default function TicketDetailsPage() {
                 </div>
 
                 {/* Attachments */}
-                {ticket.attachments && ticket.attachments.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                      Attachments ({ticket.attachments.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {ticket.attachments.map((attachment, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
-                              <span className="text-blue-600 dark:text-blue-300 text-sm">📎</span>
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {attachment.originalName || attachment.fileName || `Attachment ${index + 1}`}
+                {Array.isArray(ticket.attachments) && ticket.attachments.length > 0 && (() => {
+                  // filter out empty/null/invalid attachment entries returned by backend
+                  // Stronger filtering and deduplication to avoid empty/placeholder entries
+                  const rawAttachments = ticket.attachments || [];
+                  const filtered = rawAttachments.filter(a => {
+                    if (!a) return false;
+                    if (typeof a === 'string') {
+                      const s = a.trim();
+                      if (!s) return false;
+                      const lower = s.toLowerCase();
+                      if (lower === 'null' || lower === 'undefined') return false;
+                      return true;
+                    }
+                    // object attachment: require at least a filename or a URL/path or a positive size
+                    const hasName = Boolean(a.originalName || a.fileName || a.name);
+                    const hasUrl = Boolean(a.url || a.fileUrl || a.path || a.downloadUrl || a.location || a.href);
+                    const hasSize = typeof a.size === 'number' && a.size > 0;
+                    return hasName || hasUrl || hasSize;
+                  });
+
+                  if (filtered.length === 0) return null;
+
+                  // Deduplicate by URL or filename to avoid duplicate entries
+                  const seen = new Set();
+                  const validAttachments = [];
+                  filtered.forEach(att => {
+                    const href = (typeof att === 'string') ? att : (att.url || att.fileUrl || att.path || att.downloadUrl || att.location || att.href || '');
+                    const nameKey = (typeof att === 'string') ? att : (att.originalName || att.fileName || att.name || '');
+                    const key = href || nameKey || JSON.stringify(att);
+                    if (!key) return;
+                    if (seen.has(key)) return;
+                    seen.add(key);
+                    validAttachments.push(att);
+                  });
+
+                  if (validAttachments.length === 0) return null;
+
+                  const getHref = (att) => {
+                    if (!att) return null;
+                    if (typeof att === 'string') return att;
+                    return att.url || att.fileUrl || att.path || att.downloadUrl || att.location || att.href || null;
+                  };
+
+                  const getDisplayName = (att, idx) => {
+                    if (!att) return `Attachment ${idx + 1}`;
+                    if (typeof att === 'string') {
+                      try {
+                        const url = new URL(att);
+                        return url.pathname.split('/').pop() || att;
+                      } catch (e) {
+                        return att;
+                      }
+                    }
+                    return att.originalName || att.fileName || att.name || `Attachment ${idx + 1}`;
+                  };
+
+                  const isImageUrl = (href) => {
+                    if (!href) return false;
+                    return /\.(png|jpe?g|gif|bmp|webp)(\?.*)?$/i.test(href);
+                  };
+
+                  return (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+                        Attachments ({validAttachments.length})
+                      </h3>
+                      <div className="space-y-2">
+                        {validAttachments.map((attachment, index) => {
+                          const href = getHref(attachment);
+                          const name = getDisplayName(attachment, index);
+                          const sizeLabel = (attachment && attachment.size) ? `${Math.round(attachment.size / 1024)} KB` : '';
+
+                          return (
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                                  <span className="text-blue-600 dark:text-blue-300 text-sm">📎</span>
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {href ? (
+                                      <a href={href} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-700">
+                                        {name}
+                                      </a>
+                                    ) : (
+                                      <span>{name}</span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {sizeLabel}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {attachment.size ? `${Math.round(attachment.size / 1024)} KB` : ''}
+
+                              <div className="flex items-center space-x-2">
+                                {href && isImageUrl(href) && (
+                                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">View</a>
+                                )}
+                                {href && (
+                                  <a href={href} download className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800">Download</a>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -201,36 +315,68 @@ export default function TicketDetailsPage() {
               </CardHeader>
               <CardContent>
                 {comments.length === 0 ? (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No comments yet</p>
+                  <div className="text-center py-8">
+                    <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-tr from-purple-200 to-indigo-200 dark:from-purple-800 dark:to-indigo-700 flex items-center justify-center shadow-md">
+                      <div className="text-3xl">💬</div>
+                    </div>
+                    <p className="mt-4 text-gray-500 dark:text-gray-400">No comments yet — be the first to add an update.</p>
+                  </div>
                 ) : (
                   <div className="space-y-4 mb-6">
-                    {comments.map((comment, index) => (
-                      <div key={index} className="border-l-4 border-blue-200 dark:border-blue-800 pl-4 py-2">
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          {comment.author || 'System'} • {new Date(comment.createdAt).toLocaleDateString()}
+                    {comments.map((c, i) => {
+                      const author = c.author || 'System';
+                      const initials = (String(author) || 'S').split(' ').map(n => n[0]).slice(0,2).join('');
+                      const isMine = currentUser && (
+                        (author === currentUser.name) ||
+                        (author === currentUser.email) ||
+                        (author === currentUser.uid) ||
+                        (currentUser.name && String(author).toLowerCase().includes(String(currentUser.name).toLowerCase()))
+                      );
+
+                      return (
+                        <div key={i} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`flex items-start ${isMine ? 'flex-row-reverse space-x-3 space-x-reverse' : 'space-x-3'}`}>
+                            <div className="flex-shrink-0">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold shadow ${isMine ? 'bg-gradient-to-tr from-green-500 to-teal-500 text-white' : 'bg-gradient-to-tr from-indigo-500 to-purple-500 text-white'}`}>
+                                {initials}
+                              </div>
+                            </div>
+                            <div className={`max-w-xl ${isMine ? 'text-right' : 'text-left'}`}>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className={`text-sm font-medium ${isMine ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>{author}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(c.createdAt).toLocaleString()}</div>
+                              </div>
+                              <div className={`inline-block px-4 py-2 rounded-lg shadow-sm ${isMine ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100'}`}>
+                                {c.comment}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-gray-900 dark:text-white">{comment.comment}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Add Comment */}
-                <div className="border-t dark:border-gray-700 pt-6">
+                <div className="mt-4 border-t dark:border-gray-700 pt-6">
                   <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Add a comment</h4>
                   <div className="space-y-3">
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder="Write your comment here..."
-                      rows={3}
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <div className="flex justify-end">
+                    <div className="relative">
+                      <textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Write your comment here..."
+                        rows={3}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-600 transition-shadow"
+                      />
+                      <div className="absolute right-3 bottom-3 text-xs text-gray-400 dark:text-gray-500">{Math.min(comment.length, 1000)}/1000</div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Be respectful — markdown supported</div>
                       <Button 
                         onClick={handleAddComment}
                         disabled={!comment.trim()}
-                        className="bg-blue-600 text-white hover:bg-blue-700"
+                        className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-md"
                       >
                         Send
                       </Button>
@@ -273,17 +419,17 @@ export default function TicketDetailsPage() {
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Contact Number</div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Contact No</div>
                   <div className="text-sm text-gray-900 dark:text-white">{ticket.contactNumber || 'N/A'}</div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Department</div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Department</div>
                   <div className="text-sm text-gray-900 dark:text-white">{ticket.department?.name || ticket.department || 'N/A'}</div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Company</div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Company</div>
                   <div className="text-sm text-gray-900 dark:text-white">{ticket.company?.name || ticket.company || 'N/A'}</div>
                 </div>
 
@@ -340,6 +486,12 @@ export default function TicketDetailsPage() {
           </div>
         </div>
       </div>
+
+      <LogoutDialog 
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 }

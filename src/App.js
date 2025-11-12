@@ -7,9 +7,7 @@ import {
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import TicketCreatorDashboard from "./components/TicketCreatorDashboard";
-import { ITTeamDashboard } from "./components/ITTeamDashboard";
-import { DepartmentHeadDashboard } from "./components/DepartmentHeadDashboard";
+// role-specific dashboard components are not directly imported here anymore
 import CreateTicketPage from './pages/CreateTicketPage';
 import TicketDetailsPage from './pages/TicketDetailsPage';
 import ResetPasswordPage from "./pages/ResetPasswordPage";
