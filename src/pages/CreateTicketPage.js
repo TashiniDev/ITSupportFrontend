@@ -798,7 +798,7 @@ export default function CreateTicketPage() {
             </CardHeader>
             <CardContent>
               <Label>Detailed Problem Description</Label>
-               <textarea name="description" value={form.description} onChange={handleChange} rows={6} className="w-full rounded-md border-gray-200 bg-gray-50 p-3 dark:bg-blue-900/50 dark:border-blue-600 dark:text-white dark:placeholder:text-blue-300" placeholder="Please provide (optional):\n- What exactly happened?\n- When did it start?\n- Steps you've already tried\n- Any error messages\n- Impact on your work" />
+              <textarea name="description" value={form.description} onChange={handleChange} rows={6} className="w-full rounded-md border-gray-200 bg-gray-50 p-3 dark:bg-[rgb(6,8,10)] dark:border-gray-800 dark:text-gray-200" placeholder="Please provide (optional):\n- What exactly happened?\n- When did it start?\n- Steps you've already tried\n- Any error messages\n- Impact on your work" />
             </CardContent>
           </Card>
 
