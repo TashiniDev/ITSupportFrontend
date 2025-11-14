@@ -39,7 +39,12 @@ export default function DashboardHeader({ onLogout }) {
               </span>
               {/* Show Register button only to Ticket Creators */}
               {normalizedRole === 'ticket_creator' && (
-                <Button onClick={() => setShowRegister(true)} variant="outline" size="sm" className="ml-2">
+                <Button
+                  onClick={() => setShowRegister(true)}
+                  variant="default"
+                  size="sm"
+                  className="ml-2 bg-green-600 hover:bg-green-700 focus:ring-green-500 border-green-600 text-white"
+                >
                   Register
                 </Button>
               )}

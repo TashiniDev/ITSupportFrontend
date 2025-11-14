@@ -190,7 +190,7 @@ function LoginPage() {
           <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-xl">
             <CardContent className="pt-6">
               <Tabs value={activeTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsList className="grid w-full grid-cols-1 mb-6">
                   <TabsTrigger 
                     value="login" 
                     active={activeTab === 'login'}
