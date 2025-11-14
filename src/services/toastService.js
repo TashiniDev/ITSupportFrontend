@@ -139,8 +139,8 @@ class ToastService {
     assignmentSuccess: (technician) => this.success(`Ticket assigned to ${technician}.`),
     statusChanged: (status) => this.info(`Ticket status changed to ${status}.`),
     commentAdded: () => this.success('Comment added successfully!'),
-    fileUploaded: (fileName) => this.success(`File "${fileName}" uploaded successfully!`),
-    priorityChanged: (priority) => this.warning(`Ticket priority changed to ${priority}.`)
+    fileUploaded: (fileName) => this.success(`File "${fileName}" uploaded successfully!`), 
+    severityChanged: (severity) => this.warning(`Ticket severity changed to ${severity}.`)
   };
 
   // System/Application toasts

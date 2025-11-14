@@ -28,9 +28,9 @@ const validationSchema = Yup.object({
     .required('Category is required'),
   assignedTo: Yup.string()
     .required('Assign to user is required'),
-  seniority: Yup.string()
-    .oneOf(['Low', 'Medium', 'High', 'Critical'], 'Please select a valid seniority')
-    .required('Seniority level is required'),
+  severityLevel: Yup.string()
+    .oneOf(['Low', 'Medium', 'High', 'Critical'], 'Please select a valid severity')
+    .required('Severity level is required'),
   // Optional fields validation
   contactNumber: Yup.string()
     .matches(/^[0-9+\-\s()]*$/, 'Please enter a valid phone number'),
@@ -62,7 +62,7 @@ export default function CreateTicketPage() {
     assignedTo: '',
     issueType: '',
     requestType: '',
-    seniority: '',
+    severityLevel: '',
     description: '',
   });
 
@@ -389,7 +389,11 @@ export default function CreateTicketPage() {
       if (form.assignedTo) formData.append('assignedTo', form.assignedTo);
       if (form.issueType) formData.append('issueType', form.issueType);
       if (form.requestType) formData.append('requestType', form.requestType);
-      if (form.seniority) formData.append('seniority', form.seniority);
+      if (form.severityLevel) {
+        // Send a single severityLevel field normalized to uppercase so backends
+        // receiving it get a canonical value (LOW/MEDIUM/HIGH/CRITICAL).
+        formData.append('severityLevel', String(form.severityLevel).toUpperCase());
+      }
       if (form.description) formData.append('description', form.description);
 
       // Append files. Many backends accept multiple parts with same key 'attachments'
@@ -769,22 +773,22 @@ export default function CreateTicketPage() {
                 </div>
 
                 <div>
-                  <Label>Seniority Level *</Label>
+                  <Label>Severity Level *</Label>
                   <Select 
-                    name="seniority" 
-                    value={form.seniority} 
+                    name="severityLevel" 
+                    value={form.severityLevel} 
                     onChange={handleChange}
-                    className={validationErrors.seniority ? 'border-red-500' : ''}
+                    className={validationErrors.severityLevel ? 'border-red-500' : ''}
                   >
-                    <option value="">Select seniority level</option>
+                      <option value="">Select severity level</option>
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                     <option value="Critical">Critical</option>
                   </Select>
-                  {validationErrors.seniority && (
+                  {validationErrors.severityLevel && (
                     <div className="text-sm text-red-600 mt-1">
-                      {validationErrors.seniority}
+                      {validationErrors.severityLevel}
                     </div>
                   )}
                 </div>

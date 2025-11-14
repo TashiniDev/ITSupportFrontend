@@ -184,7 +184,7 @@ export default function TicketDetailsPage() {
                   </h1>
                   <div className="flex space-x-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg`}>Status: {ticket.status}</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-teal-500 to-teal-700 text-white shadow-lg`}>Seniority: {ticket.seniority}</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-teal-500 to-teal-700 text-white shadow-lg`}>Severity Level: {ticket.severityLevel}</span>
                   </div>
                 </div>
 
