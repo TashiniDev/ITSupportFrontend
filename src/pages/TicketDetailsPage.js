@@ -99,7 +99,7 @@ export default function TicketDetailsPage() {
           console.error('Failed to persist status change:', statusErr);
           // rollback optimistic change
           setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
-          toastService.error('Failed to update ticket status');
+              // Intentionally NOT showing a toast to avoid alarming the user for this backend endpoint issue.
         }
       }
 
