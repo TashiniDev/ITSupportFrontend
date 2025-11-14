@@ -71,18 +71,58 @@ export default function TicketDetailsPage() {
   const handleAddComment = async () => {
     if (!comment.trim()) return;
 
+    const trimmed = comment.trim();
+    const prevStatus = ticket?.status;
+    // Only update when the ticket is currently 'new' and there are no existing comments
+    const shouldUpdateStatus = prevStatus && String(prevStatus).toLowerCase() === 'new' && comments.length === 0;
+
+    // Optimistically update status in UI so user sees immediate change (use uppercase to match UI style)
+    if (shouldUpdateStatus) {
+      setTicket(prev => prev ? { ...prev, status: 'PROCESSING' } : prev);
+    }
+
     try {
+      // Post the comment
       await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/comments`, {
         method: 'POST',
-        body: JSON.stringify({ comment: comment.trim() })
+        body: JSON.stringify({ comment: trimmed })
       });
+
+      // Persist status change on the server if needed
+      if (shouldUpdateStatus) {
+        try {
+          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'PROCESSING' })
+          });
+        } catch (statusErr) {
+          console.error('Failed to persist status change:', statusErr);
+          // rollback optimistic change
+          setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
+          toastService.error('Failed to update ticket status');
+        }
+      }
 
       // Reload comments from server so the list is authoritative and updated
       await loadComments();
+
+      // Fetch latest ticket from server to ensure status reflects what backend has
+      try {
+        const fresh = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`);
+        setTicket(fresh.data || fresh);
+      } catch (freshErr) {
+        // non-fatal: we already optimistically updated; log for debugging
+        console.warn('Failed to refresh ticket after comment:', freshErr);
+      }
+
       setComment('');
       toastService.success('Comment added successfully');
     } catch (error) {
       console.error('Failed to add comment:', error);
+      // rollback optimistic status change if comment fails
+      if (shouldUpdateStatus) {
+        setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
+      }
       toastService.error('Failed to add comment');
     }
   };
