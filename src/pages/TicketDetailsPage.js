@@ -180,7 +180,7 @@ export default function TicketDetailsPage() {
                 </div>
                 <div className="flex items-start justify-between mb-4">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {ticket.title || 'Ticket Details'}
+                    {(ticket.title && ticket.title !== ticket.fullName) ? ticket.title : ''}
                   </h1>
                   <div className="flex space-x-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg`}>Status: {ticket.status}</span>
