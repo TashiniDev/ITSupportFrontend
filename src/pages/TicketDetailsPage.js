@@ -91,25 +91,15 @@ export default function TicketDetailsPage() {
       // Persist status change on the server if needed
       if (shouldUpdateStatus) {
         try {
-          // Try new backend endpoint first
-          try {
-            await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/processing`, {
-              method: 'PUT'
-            });
-          } catch (primaryErr) {
-            console.warn('Primary processing endpoint failed:', primaryErr?.message);
-            // Fallback: try PATCH with status field
-            console.log('Trying fallback: PATCH with status field for processing');
-            await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
-              method: 'PATCH',
-              body: JSON.stringify({ status: 'PROCESSING' })
-            });
-          }
+          // Use the new backend endpoint to mark ticket as processing
+          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/processing`, {
+            method: 'PUT'
+          });
         } catch (statusErr) {
-          console.error('Failed to persist status change to processing (all attempts):', statusErr);
+          console.error('Failed to persist status change to processing:', statusErr);
           // rollback optimistic change
           setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
-          // Don't show toast to avoid alarming user about backend issues
+          toastService.error('Failed to update status to Processing');
         }
       }
 
@@ -143,47 +133,43 @@ export default function TicketDetailsPage() {
     const prevStatus = ticket.status;
     if (!prevStatus || String(prevStatus).toLowerCase() !== 'processing') return;
 
-    // Optimistically update UI
+    console.log('🔧 DEBUG: Starting handleMarkCompleted');
+    console.log('🔧 Current ticket status:', prevStatus);
+    console.log('🔧 Ticket ID:', ticketId);
+
+    // Optimistically update UI immediately
     setTicket(prev => prev ? { ...prev, status: 'COMPLETED' } : prev);
 
     try {
-      // Debug: log the exact URL being called
       const completeUrl = `${API_ENDPOINTS.TICKETS}/${ticketId}/complete`;
-      console.log('Attempting to mark completed via URL:', completeUrl);
-      
-      // Try the new backend endpoint first
-      try {
-        await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/complete`, {
-          method: 'PUT'
-        });
-      } catch (primaryErr) {
-        console.warn('Primary complete endpoint failed:', primaryErr?.message);
-        
-        // Fallback: try updating via PATCH with status field
-        console.log('Trying fallback: PATCH with status field');
-        await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
-          method: 'PATCH', 
-          body: JSON.stringify({ status: 'COMPLETED' })
-        });
-      }
+      console.log('🔧 Calling URL:', completeUrl);
+      console.log('🔧 Method: PUT');
 
-      // Refresh authoritative ticket state
+      // Use the new backend endpoint to mark as completed
+      const response = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/complete`, {
+        method: 'PUT'
+      });
+
+      console.log('🔧 SUCCESS! Response:', response);
+
+      // Refresh ticket from server to get updated data
       try {
         const fresh = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`);
+        console.log('🔧 Fresh ticket data:', fresh);
         setTicket(fresh.data || fresh);
-      } catch (freshErr) {
-        console.warn('Failed to refresh ticket after marking completed:', freshErr);
+      } catch (refreshErr) {
+        console.warn('Failed to refresh ticket after completion:', refreshErr);
       }
 
       toastService.success('Ticket marked as completed');
     } catch (err) {
-      console.error('Failed to mark ticket completed (all attempts failed):', err);
+      console.error('🚨 ERROR marking ticket completed:', err);
+      console.error('🚨 Error message:', err?.message);
+      console.error('🚨 Full error object:', err);
       
-      // rollback optimistic change
+      // Rollback UI change
       setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
-      
-      // Show a user-friendly message
-      toastService.error('Unable to mark ticket as completed. Please try again.');
+      toastService.error('Failed to mark ticket as completed');
     }
   };
 
@@ -481,6 +467,7 @@ export default function TicketDetailsPage() {
                         Send
                       </Button>
                     </div>
+
                     {/* Show 'Mark Completed' button only after first comment and when ticket is processing */}
                     {comments.length > 0 && String(ticket?.status).toLowerCase() === 'processing' && (
                       <div className="mt-4">
