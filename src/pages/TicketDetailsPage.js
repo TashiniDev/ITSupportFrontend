@@ -91,15 +91,25 @@ export default function TicketDetailsPage() {
       // Persist status change on the server if needed
       if (shouldUpdateStatus) {
         try {
-          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'PROCESSING' })
-          });
+          // Try new backend endpoint first
+          try {
+            await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/processing`, {
+              method: 'PUT'
+            });
+          } catch (primaryErr) {
+            console.warn('Primary processing endpoint failed:', primaryErr?.message);
+            // Fallback: try PATCH with status field
+            console.log('Trying fallback: PATCH with status field for processing');
+            await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'PROCESSING' })
+            });
+          }
         } catch (statusErr) {
-          console.error('Failed to persist status change:', statusErr);
+          console.error('Failed to persist status change to processing (all attempts):', statusErr);
           // rollback optimistic change
           setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
-              // Intentionally NOT showing a toast to avoid alarming the user for this backend endpoint issue.
+          // Don't show toast to avoid alarming user about backend issues
         }
       }
 
@@ -124,6 +134,56 @@ export default function TicketDetailsPage() {
         setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
       }
       toastService.error('Failed to add comment');
+    }
+  };
+
+  // Handler to mark ticket as completed
+  const handleMarkCompleted = async () => {
+    if (!ticket) return;
+    const prevStatus = ticket.status;
+    if (!prevStatus || String(prevStatus).toLowerCase() !== 'processing') return;
+
+    // Optimistically update UI
+    setTicket(prev => prev ? { ...prev, status: 'COMPLETED' } : prev);
+
+    try {
+      // Debug: log the exact URL being called
+      const completeUrl = `${API_ENDPOINTS.TICKETS}/${ticketId}/complete`;
+      console.log('Attempting to mark completed via URL:', completeUrl);
+      
+      // Try the new backend endpoint first
+      try {
+        await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/complete`, {
+          method: 'PUT'
+        });
+      } catch (primaryErr) {
+        console.warn('Primary complete endpoint failed:', primaryErr?.message);
+        
+        // Fallback: try updating via PATCH with status field
+        console.log('Trying fallback: PATCH with status field');
+        await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
+          method: 'PATCH', 
+          body: JSON.stringify({ status: 'COMPLETED' })
+        });
+      }
+
+      // Refresh authoritative ticket state
+      try {
+        const fresh = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`);
+        setTicket(fresh.data || fresh);
+      } catch (freshErr) {
+        console.warn('Failed to refresh ticket after marking completed:', freshErr);
+      }
+
+      toastService.success('Ticket marked as completed');
+    } catch (err) {
+      console.error('Failed to mark ticket completed (all attempts failed):', err);
+      
+      // rollback optimistic change
+      setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
+      
+      // Show a user-friendly message
+      toastService.error('Unable to mark ticket as completed. Please try again.');
     }
   };
 
@@ -421,6 +481,17 @@ export default function TicketDetailsPage() {
                         Send
                       </Button>
                     </div>
+                    {/* Show 'Mark Completed' button only after first comment and when ticket is processing */}
+                    {comments.length > 0 && String(ticket?.status).toLowerCase() === 'processing' && (
+                      <div className="mt-4">
+                        <Button
+                          onClick={handleMarkCompleted}
+                          className="bg-red-600 hover:bg-red-700 text-white shadow-md"
+                        >
+                          Mark Completed
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
