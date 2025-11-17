@@ -128,9 +128,8 @@ export default function TicketDetailsPage() {
       // Persist status change on the server if needed
       if (shouldUpdateStatus) {
         try {
-          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'PROCESSING' })
+          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/processing`, {
+            method: 'PUT'
           });
         } catch (statusErr) {
           console.error('Failed to persist status change:', statusErr);
@@ -192,6 +191,23 @@ export default function TicketDetailsPage() {
       setCurrentUser(null);
       setShowLogoutDialog(false);
       navigate('/login');
+    }
+  };
+
+  // Mark ticket as completed function
+  const handleMarkCompleted = async () => {
+    try {
+      await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/complete`, {
+        method: 'PUT'
+      });
+
+      // Update local state
+      setTicket(prev => prev ? { ...prev, status: 'COMPLETED' } : prev);
+      
+      toastService.success('Ticket marked as completed successfully');
+    } catch (error) {
+      console.error('Failed to mark ticket as completed:', error);
+      toastService.error('Failed to mark ticket as completed');
     }
   };
 
@@ -472,8 +488,7 @@ export default function TicketDetailsPage() {
                       <div className="absolute right-3 bottom-3 text-xs text-gray-400 dark:text-gray-500">{Math.min(comment.length, 1000)}/1000</div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Be respectful — markdown supported</div>
+                    <div className="flex items-center justify-between"> 
                       <Button 
                         onClick={handleAddComment}
                         disabled={!comment.trim()}
@@ -486,6 +501,25 @@ export default function TicketDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Mark Completed Section */}
+            {ticket.status && ticket.status.toUpperCase() !== 'COMPLETED' && comments.length > 0 && (
+              <Card className="bg-white dark:bg-gray-900 dark:border-gray-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                     <br></br> <p className="text-sm text-gray-600 dark:text-gray-400">Mark this ticket as completed when the issue has been resolved.</p>
+                    </div>
+                    <Button 
+                      onClick={handleMarkCompleted}
+                      className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 shadow-lg"
+                    >
+                      Mark Completed
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar - Ticket Information */}
