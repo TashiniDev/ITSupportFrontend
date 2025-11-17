@@ -19,7 +19,10 @@ export const API_ENDPOINTS = {
   USERS_BY_CATEGORY: '/user/category'
   ,
   // Tickets
-  TICKETS: '/tickets'
+  TICKETS: '/tickets',
+  
+  // Attachments
+  ATTACHMENT_DOWNLOAD: '/tickets/attachments'
 };
 
 // Helper function to make API calls

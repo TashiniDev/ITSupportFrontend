@@ -17,6 +17,43 @@ export default function TicketDetailsPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
+  // Download attachment function
+  const handleDownloadAttachment = async (attachmentId, filename) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`http://10.1.1.57:3001/api/tickets/attachments/${attachmentId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download attachment');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'attachment';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toastService.success('Attachment downloaded successfully');
+    } catch (error) {
+      console.error('Failed to download attachment:', error);
+      toastService.error('Failed to download attachment');
+    }
+  };
+
   useEffect(() => {
     const raw = localStorage.getItem('userData');
     if (!raw) return;
@@ -91,15 +128,15 @@ export default function TicketDetailsPage() {
       // Persist status change on the server if needed
       if (shouldUpdateStatus) {
         try {
-          // Use the new backend endpoint to mark ticket as processing
-          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/processing`, {
-            method: 'PUT'
+          await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'PROCESSING' })
           });
         } catch (statusErr) {
-          console.error('Failed to persist status change to processing:', statusErr);
+          console.error('Failed to persist status change:', statusErr);
           // rollback optimistic change
           setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
-          toastService.error('Failed to update status to Processing');
+              // Intentionally NOT showing a toast to avoid alarming the user for this backend endpoint issue.
         }
       }
 
@@ -124,52 +161,6 @@ export default function TicketDetailsPage() {
         setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
       }
       toastService.error('Failed to add comment');
-    }
-  };
-
-  // Handler to mark ticket as completed
-  const handleMarkCompleted = async () => {
-    if (!ticket) return;
-    const prevStatus = ticket.status;
-    if (!prevStatus || String(prevStatus).toLowerCase() !== 'processing') return;
-
-    console.log('🔧 DEBUG: Starting handleMarkCompleted');
-    console.log('🔧 Current ticket status:', prevStatus);
-    console.log('🔧 Ticket ID:', ticketId);
-
-    // Optimistically update UI immediately
-    setTicket(prev => prev ? { ...prev, status: 'COMPLETED' } : prev);
-
-    try {
-      const completeUrl = `${API_ENDPOINTS.TICKETS}/${ticketId}/complete`;
-      console.log('🔧 Calling URL:', completeUrl);
-      console.log('🔧 Method: PUT');
-
-      // Use the new backend endpoint to mark as completed
-      const response = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/complete`, {
-        method: 'PUT'
-      });
-
-      console.log('🔧 SUCCESS! Response:', response);
-
-      // Refresh ticket from server to get updated data
-      try {
-        const fresh = await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}`);
-        console.log('🔧 Fresh ticket data:', fresh);
-        setTicket(fresh.data || fresh);
-      } catch (refreshErr) {
-        console.warn('Failed to refresh ticket after completion:', refreshErr);
-      }
-
-      toastService.success('Ticket marked as completed');
-    } catch (err) {
-      console.error('🚨 ERROR marking ticket completed:', err);
-      console.error('🚨 Error message:', err?.message);
-      console.error('🚨 Full error object:', err);
-      
-      // Rollback UI change
-      setTicket(prev => prev ? { ...prev, status: prevStatus } : prev);
-      toastService.error('Failed to mark ticket as completed');
     }
   };
 
@@ -321,8 +312,23 @@ export default function TicketDetailsPage() {
 
                   const getHref = (att) => {
                     if (!att) return null;
-                    if (typeof att === 'string') return att;
-                    return att.url || att.fileUrl || att.path || att.downloadUrl || att.location || att.href || null;
+                    if (typeof att === 'string') {
+                      // If it's already a full URL, return as is
+                      if (att.startsWith('http://') || att.startsWith('https://')) {
+                        return att;
+                      }
+                      // Otherwise, construct URL with base
+                      return `http://10.1.1.57:3001${att}`;
+                    }
+                    const urlField = att.url || att.fileUrl || att.path || att.downloadUrl || att.location || att.href;
+                    if (!urlField) return null;
+                    
+                    // If it's already a full URL, return as is
+                    if (urlField.startsWith('http://') || urlField.startsWith('https://')) {
+                      return urlField;
+                    }
+                    // Otherwise, construct URL with base
+                    return `http://10.1.1.57:3001${urlField}`;
                   };
 
                   const getDisplayName = (att, idx) => {
@@ -380,7 +386,16 @@ export default function TicketDetailsPage() {
                                 {href && isImageUrl(href) && (
                                   <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">View</a>
                                 )}
-                                {href && (
+                                {(attachment.id || attachment._id) && (
+                                  <button 
+                                    onClick={() => handleDownloadAttachment(attachment.id || attachment._id, name)}
+                                    className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 hover:underline"
+                                  >
+                                    Download
+                                  </button>
+                                )}
+                                {/* Fallback for direct URL download if no ID available */}
+                                {!attachment.id && !attachment._id && href && (
                                   <a href={href} download className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800">Download</a>
                                 )}
                               </div>
@@ -467,18 +482,6 @@ export default function TicketDetailsPage() {
                         Send
                       </Button>
                     </div>
-
-                    {/* Show 'Mark Completed' button only after first comment and when ticket is processing */}
-                    {comments.length > 0 && String(ticket?.status).toLowerCase() === 'processing' && (
-                      <div className="mt-4">
-                        <Button
-                          onClick={handleMarkCompleted}
-                          className="bg-red-600 hover:bg-red-700 text-white shadow-md"
-                        >
-                          Mark Completed
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </CardContent>
