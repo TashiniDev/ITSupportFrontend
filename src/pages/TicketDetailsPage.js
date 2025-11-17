@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { apiCall, API_ENDPOINTS } from '../utils/api/config';
 import toastService from '../services/toastService';
+import attachmentService from '../services/attachmentService';
 import DashboardHeader from '../components/DashboardHeader';
 import { LogoutDialog } from '../components/LogoutDialog';
 
@@ -17,42 +18,17 @@ export default function TicketDetailsPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  // Download attachment function
+  // Download attachment function using service
   const handleDownloadAttachment = async (attachmentId, filename) => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://10.1.1.57:3001/api/tickets/attachments/${attachmentId}/download`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to download attachment');
-      }
-
-      // Create blob from response
-      const blob = await response.blob();
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'attachment';
-      document.body.appendChild(a);
-      a.click();
-      
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
+      await attachmentService.downloadAttachment(attachmentId, filename);
       toastService.success('Attachment downloaded successfully');
     } catch (error) {
       console.error('Failed to download attachment:', error);
       toastService.error('Failed to download attachment');
     }
   };
+
 
   useEffect(() => {
     const raw = localStorage.getItem('userData');
@@ -375,12 +351,13 @@ export default function TicketDetailsPage() {
                           const href = getHref(attachment);
                           const name = getDisplayName(attachment, index);
                           const sizeLabel = (attachment && attachment.size) ? `${Math.round(attachment.size / 1024)} KB` : '';
+                          const fileIcon = attachmentService.getFileIcon(name);
 
                           return (
                             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                               <div className="flex items-center space-x-3">
                                 <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
-                                  <span className="text-blue-600 dark:text-blue-300 text-sm">📎</span>
+                                  <span className="text-blue-600 dark:text-blue-300 text-sm">{fileIcon}</span>
                                 </div>
                                 <div>
                                   <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -391,6 +368,7 @@ export default function TicketDetailsPage() {
                                     ) : (
                                       <span>{name}</span>
                                     )}
+                                    {/* View indicator removed */}
                                   </div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     {sizeLabel}
@@ -399,20 +377,26 @@ export default function TicketDetailsPage() {
                               </div>
 
                               <div className="flex items-center space-x-2">
-                                {href && isImageUrl(href) && (
-                                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">View</a>
-                                )}
+                                {/* Download button */}
                                 {(attachment.id || attachment._id) && (
-                                  <button 
+                                  <button
                                     onClick={() => handleDownloadAttachment(attachment.id || attachment._id, name)}
-                                    className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 hover:underline"
+                                    className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800"
+                                    aria-label={`Download ${name}`}
+                                    title="Download"
                                   >
-                                    Download
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 21h16" />
+                                    </svg>
                                   </button>
                                 )}
                                 {/* Fallback for direct URL download if no ID available */}
                                 {!attachment.id && !attachment._id && href && (
-                                  <a href={href} download className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800">Download</a>
+                                  <a href={href} download className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800" aria-label={`Download ${name}`} title="Download">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0l4-4m-4 4l-4-4M4 21h16" />
+                                    </svg>
+                                  </a>
                                 )}
                               </div>
                             </div>

@@ -22,7 +22,8 @@ export const API_ENDPOINTS = {
   TICKETS: '/tickets',
   
   // Attachments
-  ATTACHMENT_DOWNLOAD: '/tickets/attachments'
+  ATTACHMENT_DOWNLOAD: '/tickets/attachments',
+  ATTACHMENT_VIEW: '/attachments'
 };
 
 // Helper function to make API calls
