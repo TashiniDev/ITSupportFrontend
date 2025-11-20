@@ -18,6 +18,7 @@ export default function ITTeamDashboard() {
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 10 });
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [editingTicketId, setEditingTicketId] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
@@ -55,6 +56,7 @@ export default function ITTeamDashboard() {
       // Build query parameters (removed category filter since data is already filtered by user's category)
       const params = new URLSearchParams();
       if (selectedAssignedTo) params.append('assignedTo', selectedAssignedTo);
+      if (selectedStatus) params.append('status', selectedStatus);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
       params.append('page', page.toString());
@@ -91,7 +93,7 @@ export default function ITTeamDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTickets(1);
-  }, [selectedAssignedTo, dateFrom, dateTo]);
+  }, [selectedAssignedTo, selectedStatus, dateFrom, dateTo]);
 
   // Close status dropdown when clicking outside
   useEffect(() => {
@@ -120,8 +122,13 @@ export default function ITTeamDashboard() {
     setDateTo(e.target.value);
   };
 
+  const handleStatusFilterChange = (e) => {
+    setSelectedStatus(e.target.value);
+  };
+
   const clearAllFilters = () => {
     setSelectedAssignedTo('');
+    setSelectedStatus('');
     setDateFrom('');
     setDateTo('');
   };
@@ -197,7 +204,7 @@ export default function ITTeamDashboard() {
             <button onClick={clearAllFilters} className="text-sm text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100">Clear All</button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label>Assigned To</Label>
               <Select value={selectedAssignedTo} onChange={handleAssignedToChange} disabled={isLoadingUsers || !userCategoryId}>
@@ -217,6 +224,15 @@ export default function ITTeamDashboard() {
                 {(!Array.isArray(users) || users.length === 0) && !isLoadingUsers && userCategoryId && (
                   <option disabled>No team members available</option>
                 )}
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={selectedStatus} onChange={handleStatusFilterChange}>
+                <option value="">All Statuses</option>
+                <option value="New">New</option>
+                <option value="Processing">Processing</option>
+                <option value="Completed">Completed</option>
               </Select>
             </div>
             <div>

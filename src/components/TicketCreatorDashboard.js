@@ -20,6 +20,7 @@ export default function TicketCreatorDashboard() {
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 10 });
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
 
   // user info is provided via parent props or localStorage elsewhere; avoid unused local state here
 
@@ -80,6 +81,7 @@ export default function TicketCreatorDashboard() {
       const params = new URLSearchParams();
       if (selectedCategory) params.append('category', selectedCategory);
       if (selectedAssignedTo) params.append('assignedTo', selectedAssignedTo);
+      if (selectedStatus) params.append('status', selectedStatus);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
       params.append('page', page.toString());
@@ -110,7 +112,7 @@ export default function TicketCreatorDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTickets(1);
-  }, [selectedCategory, selectedAssignedTo, dateFrom, dateTo]);
+  }, [selectedCategory, selectedAssignedTo, selectedStatus, dateFrom, dateTo]);
 
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
@@ -130,9 +132,14 @@ export default function TicketCreatorDashboard() {
     setDateTo(e.target.value);
   };
 
+  const handleStatusChange = (e) => {
+    setSelectedStatus(e.target.value);
+  };
+
   const clearAllFilters = () => {
     setSelectedCategory('');
     setSelectedAssignedTo('');
+    setSelectedStatus('');
     setDateFrom('');
     setDateTo('');
   };
@@ -177,7 +184,7 @@ export default function TicketCreatorDashboard() {
             <button onClick={clearAllFilters} className="text-sm text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100">Clear All</button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <Label>Category</Label>
               <Select value={selectedCategory} onChange={handleCategoryChange} disabled={isLoadingCategories}>
@@ -213,6 +220,15 @@ export default function TicketCreatorDashboard() {
                 {(!Array.isArray(users) || users.length === 0) && !isLoadingUsers && selectedCategory && (
                   <option disabled>No users available for this category</option>
                 )}
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={selectedStatus} onChange={handleStatusChange}>
+                <option value="">All Statuses</option>
+                <option value="New">New</option>
+                <option value="Processing">Processing</option>
+                <option value="Completed">Completed</option>
               </Select>
             </div>
             <div>

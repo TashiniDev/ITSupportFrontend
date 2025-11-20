@@ -20,6 +20,10 @@ const validationSchema = Yup.object({
     .min(2, 'Requester name must be at least 2 characters')
     .max(100, 'Requester name must be less than 100 characters')
     .required('Requester name is required'),
+  email: Yup.string()
+    .trim()
+    .email('Please enter a valid email address')
+    .max(254, 'Email must be less than 254 characters'),
   department: Yup.string()
     .required('Department is required'),
   company: Yup.string()
@@ -55,6 +59,7 @@ export default function CreateTicketPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     fullName: '',
+    email: '',
     contactNumber: '',
     department: '',
     company: '',
@@ -382,6 +387,7 @@ export default function CreateTicketPage() {
       const formData = new FormData();
       // Append text fields
       formData.append('fullName', form.fullName || '');
+  if (form.email) formData.append('email', form.email);
       if (form.contactNumber) formData.append('contactNumber', form.contactNumber);
       if (form.department) formData.append('department', form.department);
       if (form.company) formData.append('company', form.company);
@@ -524,7 +530,7 @@ export default function CreateTicketPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Requester Name *</Label>
                   <Input 
@@ -537,6 +543,21 @@ export default function CreateTicketPage() {
                   {validationErrors.fullName && (
                     <div className="text-sm text-red-600 mt-1">
                       {validationErrors.fullName}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>Requester Email *</Label>
+                  <Input
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="Your email address"
+                    className={validationErrors.email ? 'border-red-500' : ''}
+                  />
+                  {validationErrors.email && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {validationErrors.email}
                     </div>
                   )}
                 </div>
