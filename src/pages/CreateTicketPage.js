@@ -24,10 +24,6 @@ const validationSchema = Yup.object({
     .trim()
     .email('Please enter a valid email address')
     .max(254, 'Email must be less than 254 characters'),
-  department: Yup.string()
-    .required('Department is required'),
-  company: Yup.string()
-    .required('Company is required'),
   category: Yup.string()
     .required('Category is required'),
   assignedTo: Yup.string()
@@ -61,8 +57,6 @@ export default function CreateTicketPage() {
     fullName: '',
     email: '',
     contactNumber: '',
-    department: '',
-    company: '',
     category: '',
     assignedTo: '',
     issueType: '',
@@ -75,8 +69,6 @@ export default function CreateTicketPage() {
   
   // State for dropdown data
   const [lookupData, setLookupData] = useState({
-    departments: [],
-    companies: [],
     categories: [],
     requestTypes: [],
     issueTypes: []
@@ -573,70 +565,6 @@ export default function CreateTicketPage() {
                   {validationErrors.contactNumber && (
                     <div className="text-sm text-red-600 mt-1">
                       {validationErrors.contactNumber}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mb-4 dark:bg-[rgb(8,10,12)] dark:border-gray-800">
-            <CardHeader>
-              <div className="text-xl text-gray-900 dark:text-white">Company & Department</div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Department *</Label>
-                  <Select 
-                    name="department" 
-                    value={form.department} 
-                    onChange={handleChange} 
-                    disabled={isLoadingLookups}
-                    className={validationErrors.department ? 'border-red-500' : ''}
-                  >
-                    <option value="">
-                      {isLoadingLookups ? 'Loading departments...' : 'Select your department'}
-                    </option>
-                    {Array.isArray(lookupData.departments) && lookupData.departments.map((dept, index) => (
-                      <option key={dept.Id || dept.id || dept.value || dept._id || index} value={dept.Id || dept.id || dept.value || dept._id}>
-                        {dept.Name || dept.name || dept.label || dept.title || dept.departmentName || `Department ${index + 1}`}
-                      </option>
-                    ))}
-                    {(!Array.isArray(lookupData.departments) || lookupData.departments.length === 0) && !isLoadingLookups && (
-                      <option disabled>No departments available</option>
-                    )}
-                  </Select>
-                  {validationErrors.department && (
-                    <div className="text-sm text-red-600 mt-1">
-                      {validationErrors.department}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <Label>Company *</Label>
-                  <Select 
-                    name="company" 
-                    value={form.company} 
-                    onChange={handleChange} 
-                    disabled={isLoadingLookups}
-                    className={validationErrors.company ? 'border-red-500' : ''}
-                  >
-                    <option value="">
-                      {isLoadingLookups ? 'Loading companies...' : 'Select company'}
-                    </option>
-                    {Array.isArray(lookupData.companies) && lookupData.companies.map((company, index) => (
-                      <option key={company.Id || company.id || company.value || company._id || index} value={company.Id || company.id || company.value || company._id}>
-                        {company.Name || company.name || company.label || company.title || company.companyName || `Company ${index + 1}`}
-                      </option>
-                    ))}
-                    {(!Array.isArray(lookupData.companies) || lookupData.companies.length === 0) && !isLoadingLookups && (
-                      <option disabled>No companies available</option>
-                    )}
-                  </Select>
-                  {validationErrors.company && (
-                    <div className="text-sm text-red-600 mt-1">
-                      {validationErrors.company}
                     </div>
                   )}
                 </div>
