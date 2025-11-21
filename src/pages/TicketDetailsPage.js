@@ -465,31 +465,34 @@ export default function TicketDetailsPage() {
                   </div>
                 )}
 
-                <div className="mt-4 border-t dark:border-gray-700 pt-6">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Add a comment</h4>
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <textarea
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        placeholder="Write your comment here..."
-                        rows={3}
-                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-600 transition-shadow"
-                      />
-                      <div className="absolute right-3 bottom-3 text-xs text-gray-400 dark:text-gray-500">{Math.min(comment.length, 1000)}/1000</div>
-                    </div>
+                {/* Add comment section - hidden when ticket is completed */}
+                {ticket.status && ticket.status.toUpperCase() !== 'COMPLETED' && (
+                  <div className="mt-4 border-t dark:border-gray-700 pt-6">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Add a comment</h4>
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <textarea
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          placeholder="Write your comment here..."
+                          rows={3}
+                          className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-600 transition-shadow"
+                        />
+                        <div className="absolute right-3 bottom-3 text-xs text-gray-400 dark:text-gray-500">{Math.min(comment.length, 1000)}/1000</div>
+                      </div>
 
-                    <div className="flex items-center justify-between"> 
-                      <Button 
-                        onClick={handleAddComment}
-                        disabled={!comment.trim()}
-                        className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-md"
-                      >
-                        Send
-                      </Button>
+                      <div className="flex items-center justify-between"> 
+                        <Button 
+                          onClick={handleAddComment}
+                          disabled={!comment.trim()}
+                          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 shadow-md"
+                        >
+                          Send
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -547,16 +550,6 @@ export default function TicketDetailsPage() {
                 <div>
                   <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Contact No</div>
                   <div className="text-sm text-gray-900 dark:text-white">{ticket.contactNumber || 'N/A'}</div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Department</div>
-                  <div className="text-sm text-gray-900 dark:text-white">{ticket.department?.name || ticket.department || 'N/A'}</div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Requester Company</div>
-                  <div className="text-sm text-gray-900 dark:text-white">{ticket.company?.name || ticket.company || 'N/A'}</div>
                 </div>
 
                 {/* Conditionally show either Issue Type or Request Type */}
