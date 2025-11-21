@@ -105,7 +105,11 @@ export default function TicketDetailsPage() {
       if (shouldUpdateStatus) {
         try {
           await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/processing`, {
-            method: 'PUT'
+            method: 'PUT',
+            body: JSON.stringify({ 
+              sendEmail: true,
+              comment: trimmed 
+            })
           });
         } catch (statusErr) {
           console.error('Failed to persist status change:', statusErr);
@@ -174,7 +178,10 @@ export default function TicketDetailsPage() {
   const handleMarkCompleted = async () => {
     try {
       await apiCall(`${API_ENDPOINTS.TICKETS}/${ticketId}/complete`, {
-        method: 'PUT'
+        method: 'PUT',
+        body: JSON.stringify({ 
+          sendEmail: true 
+        })
       });
 
       // Update local state
