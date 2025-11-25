@@ -227,22 +227,138 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-lg shadow p-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Total Tickets</div>
-            <div className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">{ticketsSummary.total}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6 mb-8">
+          {/* Total Tickets */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Total Tickets</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.total || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
           </div>
-          <div className="bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-lg shadow p-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">New</div>
-            <div className="mt-4 text-2xl font-bold text-blue-600">{ticketsSummary.new}</div>
+
+          {/* New Tickets */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 dark:from-cyan-500 dark:via-blue-600 dark:to-indigo-700 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">New</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.new || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
           </div>
-          <div className="bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-lg shadow p-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Processing</div>
-            <div className="mt-4 text-2xl font-bold text-orange-500">{ticketsSummary.processing}</div>
+
+          {/* Pending Approval */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 dark:from-amber-500 dark:via-orange-600 dark:to-red-600 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Pending Approval</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.pendingApproval || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
           </div>
-          <div className="bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-lg shadow p-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Completed</div>
-            <div className="mt-4 text-2xl font-bold text-green-600">{ticketsSummary.completed}</div>
+
+          {/* Approved */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 dark:from-emerald-500 dark:via-teal-600 dark:to-cyan-700 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Approved</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.approved || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+
+          {/* Rejected */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-red-500 via-pink-500 to-rose-600 dark:from-red-600 dark:via-pink-600 dark:to-rose-700 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Rejected</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.rejected || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+
+          {/* Processing */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 dark:from-yellow-500 dark:via-amber-600 dark:to-orange-700 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Processing</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.processing || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
+          </div>
+
+          {/* Completed */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 dark:from-green-500 dark:via-emerald-600 dark:to-teal-700 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 cursor-pointer group">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 backdrop-blur-sm"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Completed</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.completed || 0}</div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all duration-300"></div>
           </div>
         </div>
 
@@ -298,6 +414,9 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <Select value={selectedStatus} onChange={handleStatusChange}>
                 <option value="">All Statuses</option>
                 <option value="New">New</option>
+                <option value="Pending Approval">Pending Approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
                 <option value="Processing">Processing</option>
                 <option value="Completed">Completed</option>
               </Select>

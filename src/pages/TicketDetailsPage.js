@@ -7,6 +7,7 @@ import toastService from '../services/toastService';
 import attachmentService from '../services/attachmentService';
 import DashboardHeader from '../components/DashboardHeader';
 import { LogoutDialog } from '../components/LogoutDialog';
+import { normalizeRole } from '../utils/roleUtils';
 
 export default function TicketDetailsPage() {
   const navigate = useNavigate();
@@ -86,8 +87,13 @@ export default function TicketDetailsPage() {
 
     const trimmed = comment.trim();
     const prevStatus = ticket?.status;
-    // Only update when the ticket is currently 'new' and there are no existing comments
-    const shouldUpdateStatus = prevStatus && String(prevStatus).toLowerCase() === 'new' && comments.length === 0;
+    // Update status to PROCESSING when:
+    // 1. Ticket is currently 'new' and there are no existing comments, OR
+    // 2. Ticket is currently 'approved' (Change Management workflow)
+    const shouldUpdateStatus = prevStatus && (
+      (String(prevStatus).toLowerCase() === 'new' && comments.length === 0) ||
+      String(prevStatus).toLowerCase() === 'approved'
+    );
 
     // Optimistically update status in UI so user sees immediate change (use uppercase to match UI style)
     if (shouldUpdateStatus) {
@@ -194,6 +200,66 @@ export default function TicketDetailsPage() {
     }
   };
 
+  // IT Head approve ticket function
+  const handleApproveTicket = async () => {
+    try {
+      await apiCall(`${API_ENDPOINTS.TICKETS_APPROVE}/${ticketId}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          sendEmail: true 
+        })
+      });
+
+      // Update local state
+      setTicket(prev => prev ? { ...prev, status: 'APPROVED' } : prev);
+      
+      toastService.success('Ticket approved successfully');
+    } catch (error) {
+      console.error('Failed to approve ticket:', error);
+      toastService.error('Failed to approve ticket');
+    }
+  };
+
+  // IT Head reject ticket function
+  const handleRejectTicket = async () => {
+    try {
+      await apiCall(`${API_ENDPOINTS.TICKETS_REJECT}/${ticketId}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          sendEmail: true 
+        })
+      });
+
+      // Update local state
+      setTicket(prev => prev ? { ...prev, status: 'REJECTED' } : prev);
+      
+      toastService.success('Ticket rejected');
+    } catch (error) {
+      console.error('Failed to reject ticket:', error);
+      toastService.error('Failed to reject ticket');
+    }
+  };
+
+  // Close rejected ticket function
+  const handleCloseTicket = async () => {
+    try {
+      await apiCall(`${API_ENDPOINTS.TICKETS_CLOSE}/${ticketId}/close`, {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          sendEmail: true 
+        })
+      });
+
+      // Update local state
+      setTicket(prev => prev ? { ...prev, status: 'CLOSED' } : prev);
+      
+      toastService.success('Ticket closed successfully');
+    } catch (error) {
+      console.error('Failed to close ticket:', error);
+      toastService.error('Failed to close ticket');
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -259,7 +325,16 @@ export default function TicketDetailsPage() {
                     {(ticket.title && ticket.title !== ticket.fullName) ? ticket.title : ''}
                   </h1>
                   <div className="flex space-x-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-500 to-indigo-700 text-white shadow-lg`}>Status: {ticket.status}</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${
+                      ticket.status.toUpperCase() === 'NEW' ? 'bg-gradient-to-r from-blue-500 to-blue-700 text-white' :
+                      ticket.status.toUpperCase() === 'PENDING APPROVAL' ? 'bg-gradient-to-r from-yellow-500 to-yellow-700 text-white' :
+                      ticket.status.toUpperCase() === 'APPROVED' ? 'bg-gradient-to-r from-green-500 to-green-700 text-white' :
+                      ticket.status.toUpperCase() === 'REJECTED' ? 'bg-gradient-to-r from-red-500 to-red-700 text-white' :
+                      ticket.status.toUpperCase() === 'PROCESSING' ? 'bg-gradient-to-r from-orange-500 to-orange-700 text-white' :
+                      ticket.status.toUpperCase() === 'COMPLETED' ? 'bg-gradient-to-r from-gray-500 to-gray-700 text-white' :
+                      ticket.status.toUpperCase() === 'CLOSED' ? 'bg-gradient-to-r from-gray-400 to-gray-600 text-white' :
+                      'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white'
+                    }`}>Status: {ticket.status}</span>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-teal-500 to-teal-700 text-white shadow-lg`}>Severity Level: {ticket.severityLevel}</span>
                   </div>
                 </div>
@@ -465,8 +540,59 @@ export default function TicketDetailsPage() {
                   </div>
                 )}
 
-                {/* Add comment section - hidden when ticket is completed */}
-                {ticket.status && ticket.status.toUpperCase() !== 'COMPLETED' && (
+                {/* Status Information for PENDING APPROVAL */}
+                {ticket.status && ticket.status.toUpperCase() === 'PENDING APPROVAL' && (
+                  <div className="mt-4 border-t dark:border-gray-700 pt-6">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                            Awaiting IT Head Approval
+                          </h4>
+                          <div className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                            This Change Management request is pending approval from the IT Head. 
+                            Comments cannot be added until the request is approved or rejected.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Information for REJECTED */}
+                {ticket.status && ticket.status.toUpperCase() === 'REJECTED' && (
+                  <div className="mt-4 border-t dark:border-gray-700 pt-6">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-red-800 dark:text-red-200">
+                            Request Rejected
+                          </h4>
+                          <div className="mt-1 text-sm text-red-700 dark:text-red-300">
+                            This Change Management request has been rejected by the IT Head. 
+                            The ticket can only be closed from this state.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add comment section - hidden when ticket is completed, pending approval, or rejected */}
+                {ticket.status && 
+                 ticket.status.toUpperCase() !== 'COMPLETED' && 
+                 ticket.status.toUpperCase() !== 'PENDING APPROVAL' && 
+                 ticket.status.toUpperCase() !== 'REJECTED' && (
                   <div className="mt-4 border-t dark:border-gray-700 pt-6">
                     <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Add a comment</h4>
                     <div className="space-y-3">
@@ -496,21 +622,53 @@ export default function TicketDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Mark Completed Section */}
-            {ticket.status && ticket.status.toUpperCase() !== 'COMPLETED' && comments.length > 0 && (
+            {/* Action Buttons Section */}
+            {ticket.status && ticket.status.toUpperCase() !== 'COMPLETED' && ticket.status.toUpperCase() !== 'CLOSED' && (
               <Card className="bg-white dark:bg-gray-900 dark:border-gray-700">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                     <br></br> <p className="text-sm text-gray-600 dark:text-gray-400">Mark this ticket as completed when the issue has been resolved.</p>
+                  {/* IT Head Approval Section - Change Management tickets */}
+                  {currentUser && normalizeRole(currentUser.roleId || currentUser.role) === 'department_head' && 
+                   ticket.status && ticket.status.toUpperCase() === 'PENDING APPROVAL' && (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">IT Head Approval Required</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          This Change Management request requires your approval before it can proceed.
+                        </p>
+                      </div>
+                      <div className="flex space-x-3">
+                        <Button 
+                          onClick={handleApproveTicket}
+                          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 shadow-lg"
+                        >
+                          Approve Request
+                        </Button>
+                        <Button 
+                          onClick={handleRejectTicket}
+                          className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 shadow-lg"
+                        >
+                          Reject Request
+                        </Button>
+                      </div>
                     </div>
-                    <Button 
-                      onClick={handleMarkCompleted}
-                      className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 shadow-lg"
-                    >
-                      Mark Completed
-                    </Button>
-                  </div>
+                  )}
+
+                  {/* Mark Completed Section - For PROCESSING tickets with comments */}
+                  {ticket.status && ticket.status.toUpperCase() === 'PROCESSING' && comments.length > 0 && (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Mark this ticket as completed when the issue has been resolved.</p>
+                      </div>
+                      <Button 
+                        onClick={handleMarkCompleted}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 shadow-lg"
+                      >
+                        Mark Completed
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Note: Close Rejected Ticket Section removed per user request */}
                 </CardContent>
               </Card>
             )}

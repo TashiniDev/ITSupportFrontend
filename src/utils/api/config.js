@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
   TICKETS: '/tickets',
   TICKETS_PROCESSING: '/tickets',  // Used with /:id/processing
   TICKETS_COMPLETE: '/tickets',     // Used with /:id/complete
+  TICKETS_APPROVE: '/tickets',     // Used with /:id/approve
+  TICKETS_REJECT: '/tickets',      // Used with /:id/reject
+  TICKETS_CLOSE: '/tickets',       // Used with /:id/close
   
   // Attachments
   ATTACHMENT_DOWNLOAD: '/tickets/attachments',
