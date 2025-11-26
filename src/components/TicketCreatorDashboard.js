@@ -21,25 +21,109 @@ export default function TicketCreatorDashboard() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [allTicketsForCount, setAllTicketsForCount] = useState([]);
+  const [isLoadingCounts, setIsLoadingCounts] = useState(false);
+
+  // Load all tickets for accurate counting (without pagination)
+  const loadAllTicketsForCounting = async () => {
+    try {
+      setIsLoadingCounts(true);
+      // Make API call without pagination to get all tickets for counting
+      const params = new URLSearchParams();
+      params.append('limit', '1000'); // Get a large number to ensure we get all tickets
+      params.append('page', '1');
+      
+      // Apply current filters except status (to get all statuses for counting)
+      if (selectedCategory) params.append('category', selectedCategory);
+      if (selectedAssignedTo) params.append('assignedTo', selectedAssignedTo);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      
+      const response = await apiCall(`${API_ENDPOINTS.TICKETS}?${params.toString()}`);
+      
+      if (response.data && response.data.tickets) {
+        setAllTicketsForCount(response.data.tickets);
+        console.log('Loaded all tickets for counting:', response.data.tickets.length);
+      }
+    } catch (error) {
+      console.error('Failed to load all tickets for counting:', error);
+    } finally {
+      setIsLoadingCounts(false);
+    }
+  };
 
   // Calculate filtered summary based on current filters
   const getFilteredSummary = () => {
-    if (!selectedStatus) {
-      // If no status filter is applied, use the backend summary
-      return ticketsSummary;
+    // If a status filter is applied, show that specific count
+    if (selectedStatus) {
+      const totalItemsForStatus = pagination.totalItems || tickets.length;
+      return {
+        total: totalItemsForStatus,
+        new: selectedStatus === 'New' ? totalItemsForStatus : 0,
+        pendingApproval: selectedStatus === 'Pending Approval' ? totalItemsForStatus : 0,
+        approved: selectedStatus === 'Approved' ? totalItemsForStatus : 0,
+        rejected: selectedStatus === 'Rejected' ? totalItemsForStatus : 0,
+        processing: selectedStatus === 'Processing' ? totalItemsForStatus : 0,
+        completed: selectedStatus === 'Completed' ? totalItemsForStatus : 0
+      };
     }
 
-    // If status filter is applied, calculate based on filtered tickets
-    const filteredCount = tickets.length;
+    // Use all tickets for accurate counting
+    const ticketsToCount = allTicketsForCount.length > 0 ? allTicketsForCount : tickets;
     
+    const statusCounts = {
+      new: 0,
+      pendingApproval: 0,
+      approved: 0,
+      rejected: 0,
+      processing: 0,
+      completed: 0
+    };
+
+    // Count from all tickets
+    ticketsToCount.forEach(ticket => {
+      const status = (ticket.status || 'New').toLowerCase().trim();
+      
+      switch (status) {
+        case 'new':
+          statusCounts.new++;
+          break;
+        case 'pending approval':
+        case 'pendingapproval':
+          statusCounts.pendingApproval++;
+          break;
+        case 'approved':
+          statusCounts.approved++;
+          break;
+        case 'rejected':
+          statusCounts.rejected++;
+          break;
+        case 'processing':
+          statusCounts.processing++;
+          break;
+        case 'completed':
+          statusCounts.completed++;
+          break;
+        default:
+          console.log(`Unknown status: "${ticket.status}"`);
+      }
+    });
+
+    // Calculate total from individual counts
+    const calculatedTotal = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
+    
+    console.log('Status counts calculated from', ticketsToCount.length, 'tickets:', statusCounts);
+    console.log('Calculated total:', calculatedTotal);
+    console.log('Pagination total:', pagination.totalItems);
+
     return {
-      total: filteredCount,
-      new: selectedStatus === 'New' ? filteredCount : 0,
-      pendingApproval: selectedStatus === 'Pending Approval' ? filteredCount : 0,
-      approved: selectedStatus === 'Approved' ? filteredCount : 0,
-      rejected: selectedStatus === 'Rejected' ? filteredCount : 0,
-      processing: selectedStatus === 'Processing' ? filteredCount : 0,
-      completed: selectedStatus === 'Completed' ? filteredCount : 0
+      total: calculatedTotal, // Use calculated total to ensure it matches individual counts
+      new: statusCounts.new,
+      pendingApproval: statusCounts.pendingApproval,
+      approved: statusCounts.approved,
+      rejected: statusCounts.rejected,
+      processing: statusCounts.processing,
+      completed: statusCounts.completed
     };
   };
 
@@ -120,6 +204,13 @@ export default function TicketCreatorDashboard() {
       if (response.data) {
         setTickets(response.data.tickets || []);
         setPagination(response.data.pagination || { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 10 });
+        
+        // Debug: Log the complete response to understand the data structure
+        console.log('Complete backend response:', response.data);
+        console.log('Backend summary received:', response.data.summary);
+        console.log('Pagination received:', response.data.pagination);
+        console.log('Tickets received:', response.data.tickets?.length || 0, 'tickets');
+        
         setTicketsSummary(response.data.summary || { total: 0, new: 0, processing: 0, completed: 0 });
       }
     } catch (error) {
@@ -136,6 +227,20 @@ export default function TicketCreatorDashboard() {
   useEffect(() => {
     loadTickets(1);
   }, [selectedCategory, selectedAssignedTo, selectedStatus, dateFrom, dateTo]);
+
+  // Load all tickets for counting when filters change (except status filter)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!selectedStatus) {
+      // Only load all tickets when no status filter is applied
+      loadAllTicketsForCounting();
+    }
+  }, [selectedCategory, selectedAssignedTo, dateFrom, dateTo]);
+
+  // Load all tickets for counting on initial mount
+  useEffect(() => {
+    loadAllTicketsForCounting();
+  }, []);
 
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
