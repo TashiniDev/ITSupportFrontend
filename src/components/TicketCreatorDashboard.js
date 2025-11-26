@@ -22,6 +22,29 @@ export default function TicketCreatorDashboard() {
   const [dateTo, setDateTo] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
 
+  // Calculate filtered summary based on current filters
+  const getFilteredSummary = () => {
+    if (!selectedStatus) {
+      // If no status filter is applied, use the backend summary
+      return ticketsSummary;
+    }
+
+    // If status filter is applied, calculate based on filtered tickets
+    const filteredCount = tickets.length;
+    
+    return {
+      total: filteredCount,
+      new: selectedStatus === 'New' ? filteredCount : 0,
+      pendingApproval: selectedStatus === 'Pending Approval' ? filteredCount : 0,
+      approved: selectedStatus === 'Approved' ? filteredCount : 0,
+      rejected: selectedStatus === 'Rejected' ? filteredCount : 0,
+      processing: selectedStatus === 'Processing' ? filteredCount : 0,
+      completed: selectedStatus === 'Completed' ? filteredCount : 0
+    };
+  };
+
+  const filteredSummary = getFilteredSummary();
+
   // user info is provided via parent props or localStorage elsewhere; avoid unused local state here
 
   // Load categories for filter
@@ -164,7 +187,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Total Tickets</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.total || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.total || 0}</div>
                 </div>
               </div>
             </div>
@@ -178,7 +201,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">New</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.new || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.new || 0}</div>
                 </div>
               </div>
             </div>
@@ -192,7 +215,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Pending Approval</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.pendingApproval || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.pendingApproval || 0}</div>
                 </div>
               </div>
             </div>
@@ -206,7 +229,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Approved</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.approved || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.approved || 0}</div>
                 </div>
               </div>
             </div>
@@ -220,7 +243,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Rejected</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.rejected || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.rejected || 0}</div>
                 </div>
               </div>
             </div>
@@ -234,7 +257,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Processing</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.processing || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.processing || 0}</div>
                 </div>
               </div>
             </div>
@@ -248,7 +271,7 @@ export default function TicketCreatorDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Completed</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.completed || 0}</div>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.completed || 0}</div>
                 </div>
               </div>
             </div>

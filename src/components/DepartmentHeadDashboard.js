@@ -21,6 +21,49 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+
+  // Calculate filtered summary based on current filters
+  const getFilteredSummary = () => {
+    if (!selectedStatus && !selectedCategory && !selectedAssignedTo && !dateFrom && !dateTo) {
+      // If no filters are applied, use the backend summary
+      return ticketsSummary;
+    }
+
+    // If filters are applied, calculate based on filtered tickets
+    const filteredCount = tickets.length;
+    
+    if (selectedStatus) {
+      // If status filter is applied, calculate based on that specific status
+      return {
+        total: filteredCount,
+        new: selectedStatus === 'New' ? filteredCount : 0,
+        pendingApproval: selectedStatus === 'Pending Approval' ? filteredCount : 0,
+        approved: selectedStatus === 'Approved' ? filteredCount : 0,
+        rejected: selectedStatus === 'Rejected' ? filteredCount : 0,
+        processing: selectedStatus === 'Processing' ? filteredCount : 0,
+        completed: selectedStatus === 'Completed' ? filteredCount : 0
+      };
+    }
+
+    // For other filters (category, assignedTo, date range), count by status in filtered results
+    const statusCounts = tickets.reduce((acc, ticket) => {
+      const status = ticket.status || 'New';
+      acc[status.toLowerCase().replace(/\s+/g, '')] = (acc[status.toLowerCase().replace(/\s+/g, '')] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      total: filteredCount,
+      new: statusCounts.new || 0,
+      pendingApproval: statusCounts.pendingapproval || 0,
+      approved: statusCounts.approved || 0,
+      rejected: statusCounts.rejected || 0,
+      processing: statusCounts.processing || 0,
+      completed: statusCounts.completed || 0
+    };
+  };
+
+  const filteredSummary = getFilteredSummary();
   
   // Assignment modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -235,12 +278,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Total Tickets</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.total || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.total || 0}</div>
                 </div>
               </div>
             </div>
@@ -254,12 +292,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">New</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.new || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.new || 0}</div>
                 </div>
               </div>
             </div>
@@ -273,12 +306,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Pending Approval</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.pendingApproval || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.pendingApproval || 0}</div>
                 </div>
               </div>
             </div>
@@ -292,12 +320,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Approved</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.approved || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.approved || 0}</div>
                 </div>
               </div>
             </div>
@@ -311,12 +334,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Rejected</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.rejected || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.rejected || 0}</div>
                 </div>
               </div>
             </div>
@@ -330,12 +348,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Processing</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.processing || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.processing || 0}</div>
                 </div>
               </div>
             </div>
@@ -349,12 +362,7 @@ export const DepartmentHeadDashboard = ({ user: propUser, session }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Completed</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.completed || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.completed || 0}</div>
                 </div>
               </div>
             </div>

@@ -22,6 +22,51 @@ export default function ITTeamDashboard() {
   const [editingTicketId, setEditingTicketId] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Calculate filtered summary based on current filters
+  const getFilteredSummary = () => {
+    if (!selectedStatus && !selectedAssignedTo && !dateFrom && !dateTo) {
+      // If no filters are applied, use the backend summary
+      return ticketsSummary;
+    }
+
+    // If filters are applied, calculate based on filtered tickets
+    const filteredCount = tickets.length;
+    
+    if (selectedStatus) {
+      // If status filter is applied, calculate based on that specific status
+      return {
+        teamTickets: filteredCount,
+        total: filteredCount,
+        new: selectedStatus === 'New' ? filteredCount : 0,
+        pendingApproval: selectedStatus === 'Pending Approval' ? filteredCount : 0,
+        approved: selectedStatus === 'Approved' ? filteredCount : 0,
+        rejected: selectedStatus === 'Rejected' ? filteredCount : 0,
+        processing: selectedStatus === 'Processing' ? filteredCount : 0,
+        completed: selectedStatus === 'Completed' ? filteredCount : 0
+      };
+    }
+
+    // For other filters (assignedTo, date range), count by status in filtered results
+    const statusCounts = tickets.reduce((acc, ticket) => {
+      const status = ticket.status || 'New';
+      acc[status.toLowerCase().replace(/\s+/g, '')] = (acc[status.toLowerCase().replace(/\s+/g, '')] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      teamTickets: filteredCount,
+      total: filteredCount,
+      new: statusCounts.new || 0,
+      pendingApproval: statusCounts.pendingapproval || 0,
+      approved: statusCounts.approved || 0,
+      rejected: statusCounts.rejected || 0,
+      processing: statusCounts.processing || 0,
+      completed: statusCounts.completed || 0
+    };
+  };
+
+  const filteredSummary = getFilteredSummary();
+
   // user info is provided via parent props or localStorage elsewhere; avoid unused local state here
 
   // Load users when userCategoryId is available
@@ -180,12 +225,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Team Tickets</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.teamTickets || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.teamTickets || 0}</div>
                 </div>
               </div>
             </div>
@@ -199,12 +239,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">New</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.new || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.new || 0}</div>
                 </div>
               </div>
             </div>
@@ -218,12 +253,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Pending Approval</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.pendingApproval || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.pendingApproval || 0}</div>
                 </div>
               </div>
             </div>
@@ -237,12 +267,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Approved</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.approved || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.approved || 0}</div>
                 </div>
               </div>
             </div>
@@ -256,12 +281,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Rejected</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.rejected || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.rejected || 0}</div>
                 </div>
               </div>
             </div>
@@ -275,12 +295,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Processing</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.processing || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.processing || 0}</div>
                 </div>
               </div>
             </div>
@@ -294,12 +309,7 @@ export default function ITTeamDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-semibold text-white/90 group-hover:text-white transition-all duration-300">Completed</div>
-                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{ticketsSummary.completed || 0}</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                  <svg className="w-8 h-8 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <div className="mt-3 text-4xl font-black text-white drop-shadow-lg">{filteredSummary.completed || 0}</div>
                 </div>
               </div>
             </div>
